@@ -56,27 +56,27 @@ If this work or the code is helpful to you, please cite it when it is available�
 
 ```shell
 MASA
-├── train.py                          # 训练主程序（两阶段：AVE 预训练 → 一致性训练）
-├── test.py                           # 测试程序（加载 .pth + 数据集 → 前向 → K-means 评估）
-├── MASA.py                           # 模型定义（Network：Encoder/Decoder、投影头、循环一致性、加权融合）
-├── GlobalLocalManifoldCalibration.py # ELMC 核心（拉普拉斯迹对齐视图权重，σ 自适应，可切换消融配置）
-├── loss.py                           # 损失函数（对比损失 + 重建/KL 稀疏）
-├── metric.py                         # 评价指标计算（ACC/NMI/PUR/ARI，K-means 评估）
-├── main.tex                          # LaTeX 源文件
-├── datasets                          # 数据集存放目录（.mat 格式：X 视图 cell 数组 + Y 标签）
-└── utils                             # 辅助功能的工具包
-    ├── dataloader.py                 # 数据集加载与预处理（min-max 归一化 + 噪声/冲突/缺失/稀疏注入）
-    ├── device_check.py               # 设备前置检查（CUDA > MPS > CPU，MASA_DEVICE 可强制指定）
-    ├── Logger.py                     # log 文档打印
-    ├── metric2csv.py                 # 指标 CSV 记录
-    ├── plot.py                       # 训练曲线与 ELMC σ 变化曲线
-    └── tsne_visual.py                # t-SNE 可视化（pdf+svg 双输出）
+├── train.py                          # Training entry (two-stage: AVE pretrain → consistency training)
+├── test.py                           # Evaluation (load .pth + dataset → forward → K-means)
+├── MASA.py                           # Model definition (Network: Encoder/Decoder, projection head, cycle consistency, weighted fusion)
+├── GlobalLocalManifoldCalibration.py # ELMC core (Laplacian trace-alignment view weights, adaptive σ, switchable ablation configs)
+├── loss.py                           # Loss functions (contrastive + reconstruction/KL sparsity)
+├── metric.py                         # Metrics (ACC/NMI/PUR/ARI, K-means evaluation)
+├── main.tex                          # LaTeX source
+├── datasets                          # Dataset directory (.mat: X view-cell array + Y labels)
+└── utils                             # Utilities
+    ├── dataloader.py                 # Data loading & preprocessing (min-max norm + noise/conflict/missing/sparsity injection)
+    ├── device_check.py               # Device probing (CUDA > MPS > CPU, MASA_DEVICE override)
+    ├── Logger.py                     # Logging
+    ├── metric2csv.py                 # Metric CSV export
+    ├── plot.py                       # Training curves & ELMC σ curve
+    └── tsne_visual.py                # t-SNE visualization (pdf+svg)
 ```
 
 ## 1. 📊Dataset
-- 数据格式：每个数据集一个 `.mat` 文件放入 `datasets/`，包含 `X`（各视图矩阵的 cell 数组）与 `Y`（样本标签）。
-- 训练时 `train.py` 自动遍历 `datasets/` 下全部 `.mat` 数据集。
-- 常用多视图数据集可参考：https://github.com/wangsiwei2010/awesome-multi-view-clustering
+- Each dataset is a single `.mat` file placed under `datasets/`, containing `X` (a cell array of view matrices) and `Y` (sample labels).
+- `train.py` automatically trains on every `.mat` file under `datasets/`.
+- Public multi-view datasets: https://github.com/wangsiwei2010/awesome-multi-view-clustering
 
 ## 2. ✅Run
 
@@ -86,8 +86,8 @@ MASA
 python train.py
 ```
 
-- 设备自动选择 **CUDA > MPS > CPU**；可用环境变量 `MASA_DEVICE=cuda|mps|cpu|auto` 强制指定。
-- 训练内嵌 K-means 评估，输出目录自动创建：`1.logs/`（日志）、`2.results_imgs/`（曲线）、`3.csv/`（指标）、`4.models/`（.pth 权重）、`5.tsne/`（t-SNE 可视化）、`7.ViewWeights/`（每轮 ELMC 视图权重）。
+- The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
+- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics), `4.models/` (.pth weights), `5.tsne/` (t-SNE), `7.ViewWeights/` (per-epoch ELMC view weights).
 
 (2) To run the **evaluation** with a trained model:
 
@@ -95,7 +95,7 @@ python train.py
 python test.py --model 4.models --datasets MSRCV1
 ```
 
-也可以直接修改 `test.py` 顶部的 `MODEL_PATH` / `DATASETS` 两个变量后运行，或留空交互输入（权重路径优先级：`--model` > `MODEL_PATH` > 交互输入）。
+Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
 
 ## 🧮3. Main Code
 
@@ -191,13 +191,13 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 
 ### ⚙️ Requirements
 
-| Library | Version | 推荐 | 用途 |
+| Library | Version | Recommended | Purpose |
 |---|---|---|---|
-| python | 3.9.25 | 3.9–3.12 | 运行环境 |
-| pytorch | 2.7.1+cu128 | 2.7+（按平台选 cu121 / cpu / MPS 官方 wheel） | 网络构建与两阶段训练（AVE 预训练 → 一致性训练） |
-| numpy | 2.5.1 | ≥ 1.21 | 数值计算（数据与指标处理） |
-| scipy | 1.18.0 | ≥ 1.10 | 读取 .mat 数据集 |
-| scikit-learn | 1.7.2 | ≥ 1.0 | K-means 聚类评估：ACC / NMI / PUR / ARI |
+| python | 3.9.25 | 3.9–3.12 | Runtime environment |
+| pytorch | 2.7.1+cu128 | 2.7+ (cu121 / cpu / MPS official wheels by platform) | Network construction & two-stage training (AVE pretrain → consistency training) |
+| numpy | 2.5.1 | ≥ 1.21 | Numerical computation (data & metrics) |
+| scipy | 1.18.0 | ≥ 1.10 | Load .mat datasets |
+| scikit-learn | 1.7.2 | ≥ 1.0 | K-means evaluation: ACC / NMI / PUR / ARI |
 
 ```shell
 pip install numpy scipy scikit-learn
@@ -215,7 +215,7 @@ pip install numpy scipy scikit-learn
 
 ### Device selection (automatic, no configuration needed)
 
-- Decision rule: **CUDA > MPS > CPU**（`utils/device_check.py`，训练启动时自动探测）。
+- Decision rule: **CUDA > MPS > CPU** (`utils/device_check.py`, probed automatically at startup).
 - Force a device with the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` (unavailable or invalid values fall back to automatic):
 
 ```shell
