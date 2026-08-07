@@ -18,6 +18,15 @@
 The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (AVE) probes the sparsity ratio of each view as prior knowledge for view-aware representation learning and constraint modulation; Early-to-late Manifold Consistency Calibration (ELMC) leverages the stable global manifold preserved in early-fused features to reweight the late-stage fusion of adaptively encoded local features.
 </p>
 
+### 📑 Table of Contents
+- [🧩 Method Overview: Three Core Modules](#method-overview-three-core-modules)
+- [🔗 Citation](#citation)
+- [⌨️ Source code list](#source-code-list)
+- [1. 📊 Dataset](#1-dataset)
+- [2. ✅ Run](#2-run)
+- [3. 🧮 Main Code](#3-main-code)
+- [4. 🔬 Loss](#4-loss)
+
 ### 🧩 Method Overview: Three Core Modules
 
 **① AVE — Adaptive View-specific Encoding**
