@@ -2,13 +2,32 @@
 ## **Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration** 🚀
 
 <p align="center">
-  <a href="https://github.com/cleste-pome">Ruimeng Liu</a>, 
-  <a href="https://github.com/changtang">Chang Tang</a>, 
-  <a href="">Bo Wang</a>, 
-  <a href="https://github.com/guanyuezhen">Zhenglai Li</a>, 
-  <a href="">Lianbo Guo</a>, 
-  <a href="https://github.com/xinwangliu">Xinwang Liu</a>
+  <a href="https://github.com/cleste-pome">Ruimeng Liu</a><sup>1,2</sup>,
+  <a href="https://github.com/changtang">Chang Tang</a><sup>2</sup>,
+  <a href="">Bo Wang</a><sup>3</sup>,
+  <a href="https://github.com/guanyuezhen">Zhenglai Li</a><sup>4</sup>,
+  <a href="">Lianbo Guo</a><sup>2,5</sup>,
+  <a href="https://github.com/xinwangliu">Xinwang Liu</a><sup>6</sup>
 </p>
+
+<p align="center">
+<sup>1</sup>School of Computer Science and Technology, Huazhong University of Science and Technology<br>
+<sup>2</sup>School of Software Engineering, Huazhong University of Science and Technology<br>
+<sup>3</sup>Institute of Medical Equipment Science and Engineering, Huazhong University of Science and Technology<br>
+<sup>4</sup>Shenzhen Institutes of Advanced Technology, Chinese Academy of Sciences<br>
+<sup>5</sup>Wuhan National Laboratory for Optoelectronics<br>
+<sup>6</sup>School of Computer, National University of Defense Technology
+</p>
+
+Welcome to the official implementation of **MASA** — a robust multi-view clustering framework that handles cross-view sparsity heterogeneity via adaptive sparse encoding (AVE), and calibrates view-quality imbalance in late fusion through early-to-late manifold consistency (ELMC).
+
+📣 I also have other multi-view clustering projects that may interest you ✨.
+
+**SparseMVC: Probing Cross-view Sparsity Variations for Multi-view Clustering** [NeurIPS 2025 ✨Spotlight]
+- github: https://github.com/cleste-pome/SparseMVC
+
+**Learning Disentangled Representations for Generalized Multi-view Clustering** [TPAMI 2026]
+- github: https://github.com/cleste-pome/GMAE
 
 <p align="center">
   <img src="framework.png" alt="MASA framework" width="100%">
