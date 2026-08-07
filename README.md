@@ -77,7 +77,9 @@ MASA
 - Each dataset is a single `.mat` file placed under `datasets/`, containing `X` (a cell array of view matrices) and `Y` (sample labels).
 - `train.py` automatically trains on every `.mat` file under `datasets/`.
 - Public multi-view datasets: https://github.com/wangsiwei2010/awesome-multi-view-clustering
-- If GitHub is slow or unreachable in your region, downloading via a mirror or proxy works as well.
+- If GitHub is slow or unreachable in your region, mirror services usually help, e.g.:
+  - **file download**: prefix the GitHub URL with a proxy, e.g. `https://ghproxy.com/https://github.com/<owner>/<repo>/<path>`（也可用 `https://mirror.ghproxy.com/`）;
+  - **git clone**: `git clone https://gitclone.com/github.com/<owner>/<repo>`.
 
 ## 2. ✅Run
 
