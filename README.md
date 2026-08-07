@@ -43,7 +43,7 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
 
 ### 🔗 Citation
-If our paper or code inspires you, please cite this paper when it is available😊:
+If this work or the code is helpful to you, please cite it when it is available😊:
 ```
 @article{liu2026masa,
   author={Ruimeng, Liu and Chang, Tang and Bo, Wang and Zhenglai, Li and Lianbo, Guo and Xinwang, Liu},
@@ -62,7 +62,7 @@ MASA
 ├── GlobalLocalManifoldCalibration.py # ELMC 核心（拉普拉斯迹对齐视图权重，σ 自适应，可切换消融配置）
 ├── loss.py                           # 损失函数（对比损失 + 重建/KL 稀疏）
 ├── metric.py                         # 评价指标计算（ACC/NMI/PUR/ARI，K-means 评估）
-├── main.tex                          # 论文 LaTeX 源文件
+├── main.tex                          # LaTeX 源文件
 ├── datasets                          # 数据集存放目录（.mat 格式：X 视图 cell 数组 + Y 标签）
 └── utils                             # 辅助功能的工具包
     ├── dataloader.py                 # 数据集加载与预处理（min-max 归一化 + 噪声/冲突/缺失/稀疏注入）
@@ -161,7 +161,7 @@ Additionally, the **ELMC** module computes per-view fusion weights by Laplacian 
 alignment with an adaptive bandwidth (default: the global pairwise-distance median). The
 score form and bandwidth setting can be switched at the top of
 `GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
-ablation tables in the paper.
+ablation tables.
 
 The overall objective of the consistency training stage is the **total loss**:
 
@@ -191,15 +191,13 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 
 ### ⚙️ Requirements
 
-| Library | Version | 推荐 | 用途（对应论文部分） |
+| Library | Version | 推荐 | 用途 |
 |---|---|---|---|
 | python | 3.9.25 | 3.9–3.12 | 运行环境 |
 | pytorch | 2.7.1+cu128 | 2.7+（按平台选 cu121 / cpu / MPS 官方 wheel） | 网络构建与两阶段训练（AVE 预训练 → 一致性训练） |
 | numpy | 2.5.1 | ≥ 1.21 | 数值计算（数据与指标处理） |
-| scipy | 1.18.0 | ≥ 1.10 | 读取 .mat 数据集（论文全部数据集） |
-| scikit-learn | 1.7.2 | ≥ 1.0 | K-means 聚类评估：ACC / NMI / PUR / ARI（论文全部实验指标） |
-
-> 版本号规则：论文 Implementation Details 明确的直接采用（python、pytorch）；其余为代码实际运行版本。
+| scipy | 1.18.0 | ≥ 1.10 | 读取 .mat 数据集 |
+| scikit-learn | 1.7.2 | ≥ 1.0 | K-means 聚类评估：ACC / NMI / PUR / ARI |
 
 ```shell
 pip install numpy scipy scikit-learn
