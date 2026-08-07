@@ -1,0 +1,1165 @@
+\documentclass[10pt, journal, compsoc]{IEEEtran}
+\usepackage{pifont}
+\ifCLASSOPTIONcompsoc
+% The IEEE Computer Society needs nocompress option
+% requires cite.sty v4.0 or later (November 2003)
+\usepackage[nocompress]{cite}
+\else
+% normal IEEE
+\usepackage{cite}
+\fi
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{stfloats}
+\usepackage{subfigure}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{makecell}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{caption}
+\captionsetup[table]{labelformat=simple,textfont=sc}
+\makeatletter
+\let\NAT@parse\undefined
+\makeatother
+\usepackage{hyperref} %hyperref still needs to be put at the end!
+\usepackage{bm}
+\usepackage[numbers, sort&compress]{natbib}
+\usepackage{amssymb}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{colortbl}
+\definecolor{light}{gray}{.85}
+\usepackage{CJKutf8}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{bbm}
+% Add color
+\definecolor{c1}{rgb}{0,0.58,0.7}
+\definecolor{c2}{rgb}{0,0.39,0}
+\definecolor{c3}{rgb}{0.3,0.3,0.3}
+\newcommand{\markZZL}{\textcolor{Brown}}
+\usepackage{lettrine} % 首字下沉效果
+%
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+% \usepackage[pdftex]{graphicx}
+% declare the path(s) where your graphic files are
+% \graphicspath{{../pdf/}{../jpeg/}}
+% and their extensions so you won't have to specify these with
+% every instance of \includegraphics
+% \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+% or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+% will default to the driver specified in the system graphics.cfg if no
+% driver is specified.
+% \usepackage[dvips]{graphicx}
+% declare the path(s) where your graphic files are
+% \graphicspath{{../eps/}}
+% and their extensions so you won't have to specify these with
+% every instance of \includegraphics
+% \DeclareGraphicsExtensions{.eps}
+\fi
+% NOTE: PDF hyperlink and bookmark features are not required in IEEE
+%       papers and their use requires extra complexity and work.
+% *** IF USING HYPERREF BE SURE AND CHANGE THE EXAMPLE PDF ***
+% *** TITLE/SUBJECT/AUTHOR/KEYWORDS INFO BELOW!!           ***
+\newcommand{\MYhyperrefoptions}{bookmarks=true,bookmarksnumbered=true, pdfpagemode={UseOutlines},plainpages=false,pdfpagelabels=true,
+colorlinks=true,linkcolor={black},citecolor={black},urlcolor={black}, pdftitle={Bare Demo of IEEEtran.cls for Computer Society Journals},%<!CHANGE!
+pdfsubject={Typesetting},%<!CHANGE!
+pdfauthor={Michael D. Shell},%<!CHANGE!
+pdfkeywords={Computer Society, IEEEtran, journal, LaTeX, paper, template}}%<^!CHANGE!
+% correct bad hyphenation here
+%\hyphenation{op-tical net-works semi-conduc-tor}
+%\hyphenpenalty=5000
+%\tolerance=1000
+%\hypersetup{
+%colorlinks=true,
+%linkcolor=green
+\begin{document}
+\title{Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration}
+
+% 作者信息
+\author{
+Ruimeng~Liu, 
+Chang~Tang,
+ ~\IEEEmembership{Senior Member,~IEEE},
+Bo~Wang,
+Zhenglai~Li,
+~\IEEEmembership{Member,~IEEE},\\
+Lianbo~Guo,
+~\IEEEmembership{Senior Member,~IEEE},
+and Xinwang~Liu,
+~\IEEEmembership{Senior Member,~IEEE}
+% 左下页脚附注
+\IEEEcompsocitemizethanks{
+\IEEEcompsocthanksitem This work was supported in part by the National Natural Science Foundation of China under grant 62522604 and 62476258, and in part by the Natural Science Foundation of Hubei Province under grant 2025AFA113, and in part by the Interdisciplinary Research Program of HUST under grant 2025JCY3024. %(Corresponding Author: Chang Tang).
+\IEEEcompsocthanksitem Ruimeng Liu is with the School of Computer Science and Technology, and the School of Software Engineering, Huazhong University of Science and Technology, Wuhan 430074, China (e-mail: lrmhust@icloud.com).
+\IEEEcompsocthanksitem Chang Tang is with the School of Software Engineering, Huazhong University of Science and Technology, Wuhan 430074, China (e-mail: tangchang@hust.edu.cn).
+\IEEEcompsocthanksitem Bo Wang is with Institute of Medical Equipment Science and Engineering, Huazhong University of Science and Technology, Wuhan 430074, China (e-mail: bow@hust.edu.cn).
+\IEEEcompsocthanksitem Zhenglai Li is with Shenzhen Institutes of Advanced Technology, Chinese Academy of Sciences, Shenzhen 518055, China (e-mail: zhenglai.li@siat.ac.cn).
+\IEEEcompsocthanksitem Lianbo Guo is with the School of Software Engineering, and Wuhan National Laboratory for Optoelectronics, Huazhong University of Science and Technology, Wuhan 430074, China (e-mail: lbguo@hust.edu.cn).
+\IEEEcompsocthanksitem Xinwang Liu is with the School of Computer, National University of Defense Technology, Changsha 410073, China (xinwangliu@nudt.edu.cn).
+}}
+
+\markboth{Journal of \LaTeX\ Class Files,~Vol.~1, No.~1, May~2026}%
+{Shell \MakeLowercase{\textit{et al.}}: Bare Advanced Demo of IEEEtran.cls for IEEE Computer Society Journals}
+
+%~\markZZL{How to address the introduced issue? I do not see any key words that tell me about the related solution.}
+\IEEEtitleabstractindextext{%
+\begin{abstract}\justifying For multi-view data, structural heterogeneity across views is a common property, with cross-view sparsity variation serving as a typical manifestation. To first account for this sparsity-induced heterogeneity, we develop Adaptive View-specific Encoding, which incorporates the sparsity ratio of each view as prior knowledge for view-aware representation learning and constraint modulation.
+Based thereon, we further tackle the broader issue of view quality imbalance in multi-view fusion, where low-quality views introduce unreliable structural relations and view-specific constraints further amplify latent discrepancies. 
+To this end, we propose a global-local manifold-guided fusion mechanism named Early-to-late Manifold Consistency Calibration, which leverages the relatively stable global manifold preserved in early-fused encoded features to modulate robust late-stage fusion of adaptively encoded local features.
+Specifically, the early-stage global features serve as a structural anchor for assessing the manifold consistency of features of each adaptively encoded local view. The resulting consistency scores are then used to adaptively reweight late-stage global fusion, attenuating structurally unreliable views while reinforcing those aligned with the common manifold. 
+In this manner, latent manifold consistency enables early fusion to calibrate late-stage fusion, thereby establishing a principled connection between adaptive view-specific encoding and cross-view distribution alignment.
+The full framework, named \textbf{M}anifold Consistency Guided \textbf{A}daptive \textbf{S}parse \textbf{A}utoencoder for Multi-view Clustering (\textbf{MASA}), is validated on multiple datasets and demonstrates superior effectiveness and robustness across diverse experimental settings. 
+On ALOI-100, MASA further enhances clustering stability, reducing the fluctuation standard deviation over the final rounds from 3.02\% to 1.28\%. 
+The source code will be publicly available upon publication.\end{abstract}
+
+% Note that keywords are not normally used for peerreview papers.
+\begin{IEEEkeywords}Multi-view Clustering, Representation Learning, Sparse Autoencoder, Distribution Alignment, Manifold Learning.\end{IEEEkeywords}}
+
+% make the title area
+\maketitle
+
+% To allow for easy dual compilation without having to reenter the
+% abstract/keywords data, the \IEEEtitleabstractindextext text will
+% not be used in maketitle, but will appear (i.e., to be "transported")
+% here as \IEEEdisplaynontitleabstractindextext when compsoc mode
+% is not selected <OR> if conference mode is selected - because compsoc
+% conference papers position the abstract like regular (non-compsoc)
+% papers do!
+\IEEEdisplaynontitleabstractindextext
+% \IEEEdisplaynontitleabstractindextext has no effect when using
+% compsoc under a non-conference mode.
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+\ifCLASSOPTIONcompsoc \IEEEraisesectionheading{\section{Introduction}
+\fi 
+\label{sec:introduction}}
+\lettrine{M}{ulti-view} clustering \cite{wang2013multi,peng2017deep,MVCANxu2024investigating} aims to discover a shared latent representation from data described by multiple heterogeneous views, each of which provides a distinct yet complementary characterization of the same samples. Its effectiveness is often limited by cross-view structural heterogeneity, which appears not only as feature discrepancy but also as variation in intrinsic data properties\cite{liu2022localized,CVCLchen2023deep}.
+
+A typical manifestation of such heterogeneity is cross-view sparsity variation \cite{yin2015multi,liu2025sparsemvc}. Due to modality-specific representations, acquisition processes, or preprocessing pipelines, different views often exhibit unequal sparsity degrees. Since sparsity affects feature informativeness and structural reliability, imposing uniform encoding constraints on all views may lead to suboptimal representations \citep{zhang2023enhanced,kang2024sparse}. This motivates an adaptive encoding mechanism with constraint strength tailored to the sparsity degree of each view.
+
+  \begin{figure}[t]
+    \centering
+    \includegraphics[width=1\linewidth]{pictures/intro.pdf}
+    \caption{Our architecture MASA integrates a set of complementary constraints across multiple scales, encompassing (1) feature extraction and reconstruction at the individual-sample level, (2) relational manifold structural configuration among samples within each view, and (3) sample-wise distributional alignment between global and each local view.}
+    \label{figure:MultiConstraints}
+    \vspace{-1.5em} % 调整间距的值
+  \end{figure}
+To address view sparsity heterogeneity at the encoding stage, we develop \textbf{A}daptive \textbf{V}iew-specific \textbf{E}ncoding (\textbf{AVE}), which incorporates the sparsity ratio of each view as prior knowledge for view-aware representation learning and constraint modulation. By adjusting the sparsity constraint according to the measured sparsity degree, AVE enables heterogeneous views to be encoded under tailored regularization schemes. The central challenge of this work arises after view-specific encoding. Although AVE adaptively regulates each view according to its sparsity structure, different encoded views may still preserve neighborhood geometry with unequal fidelity. Low-quality views can introduce unreliable manifold relations, while the latent discrepancies amplified by view-specific encoding may further affect the fusion process. Therefore, a key question is: \textit{how to identify, before late-stage fusion, which encoded views are structurally reliable and which should be attenuated?}
+
+  \begin{figure*}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{pictures/MVC/MASA.pdf}
+    \caption{Overview of our proposed framework MASA. It starts by employing sparse autoencoders whose adaptive encoding and reconstruction constraints produce latent representations ($\mathbf{Z}$) from which the reconstructed features ($\mathbf{R}$) approximate the original features ($\mathbf{X}$). During the late fusion stage, the correlation between encoded early-fused global features (${\mathbf{Z}_{G}}$) and view-specific features ($\mathbf{Z}_{v}$) guides the computation of view-level state weights via the manifold consistency mechanism ($W_{v}$). Finally, the contrastive view distribution alignment module enhances clustering performance by aligning multi-view similarities between late-fused global features ($\mathbf{Y}_{\text{global}}$) and view-specific compression features ($\mathbf{Y}_{v}$), ensuring a balance between global consistency and view-specific diversity.}
+    \label{figure:framwork}
+    \vspace{-10pt} % 调整间距的值，可以根据需要调整
+  \end{figure*}
+Existing view weighting strategies usually rely on implicit attention mechanisms or heuristic similarity criteria, which do not provide an explicit geometric reference for evaluating the structural reliability of encoded views\cite{SCMVCwu2024self,li2025mask}. Directly fusing local representations without such reliability estimation may allow distorted neighborhood relations to propagate into the global representation, thereby degrading clustering performance. To solve this problem, we introduce \textbf{E}arly-to-\textbf{L}ate \textbf{M}anifold \textbf{C}onsistency Calibration (\textbf{ELMC}), which uses the relatively stable global manifold preserved in early-fused encoded features as a structural anchor. The manifold consistency between each adaptively encoded local view and the global anchor is measured through graph-Laplacian alignment, and the resulting scores are converted into adaptive view weights for late-stage fusion. In this way, structurally unreliable views are attenuated, whereas views aligned with the common manifold are reinforced.
+More fundamentally, this early-to-late formulation avoids a circular dependency in view reliability estimation. If the final late-fused representation were used as the reference for view weighting, the reliability criterion would depend on the same aggregation process that it is intended to guide. In this case, biased fusion results could be reinforced rather than corrected. Therefore, MASA uses the early-fused global representation to guide the subsequent late-stage fusion. Since this representation is obtained before adaptive view weighting, it provides a prior fusion state rather than a consequence of the final aggregation. This design separates view reliability estimation from the final fused output and enables late-stage fusion to be calibrated by preceding structural evidence rather than by the final fused output itself.
+
+To further ensure that the fused representation remains coherent across views, MASA employs \textbf{G}lobal-\textbf{l}ocal \textbf{D}istribution \textbf{A}lignment (GLDA), where contrastive learning encourages sample-wise consistency between the late-fused global representation and each local view. This alignment connects manifold-guided fusion with cross-view distribution consistency, producing representations that are both geometrically reliable and discriminative for clustering.
+
+Overall, MASA is built upon three complementary levels of constraints: (1) individual-sample feature extraction and reconstruction, (2) relational manifold structure modeling among samples within each view, and (3) sample-wise distributional alignment between the global representation and each local view. These constraints are organized into three interdependent modules, namely differentiated encoding, imbalance-aware structural measurement, and dynamic global-local fusion. Specifically, AVE first mitigates sparsity-induced encoding discrepancy through view-specific constraint modulation, ELMC then estimates the structural reliability of each encoded view through early-to-late manifold consistency, and global-local distribution alignment further refines the fused representation by enforcing sample-wise cross-view consistency. Through this progressive design, MASA establishes a principled connection among sparsity-aware encoding, manifold-consistent view weighting, and distribution-level alignment. Our key contributions are threefold, as outlined below:
+\begin{figure*}[ht]
+\centering
+\subfigure[DCP(TPAMI’22)] { \includegraphics[width=0.380\columnwidth]{pictures/Experiment/t-sne/comparison/ALOI-100/DCP_ALOI-100.pdf} }
+\subfigure[GCFAgg(CVPR'23)] { \includegraphics[width=0.380\columnwidth]{pictures/Experiment/t-sne/comparison/ALOI-100/GCFAgg_ALOI-100.pdf} }
+\subfigure[MVCAN(CVPR’24)] { \includegraphics[width=0.380\columnwidth]{pictures/Experiment/t-sne/comparison/ALOI-100/MVCAN_ALOI-100.pdf} }
+\subfigure[DCG(AAAI’25)] { \includegraphics[width=0.380\columnwidth]{pictures/Experiment/t-sne/comparison/ALOI-100/DCG_ALOI-100.pdf} }
+\subfigure[MASA(Ours)]
+{ \includegraphics[width=0.380\columnwidth]{pictures/Experiment/t-sne/comparison/ALOI-100/Ours_ALOI-100.pdf} }
+\vspace{-0.8em}
+\caption{The t-SNE visualization results of feature representations on the
+ALOI-100 dataset for different SOTA methods.}
+\label{fig:tsne_sota}
+\vspace{-1.3em}
+\end{figure*}
+
+\begin{itemize}[leftmargin=*]
+   \item[\ding{182}] We propose an Early-to-Late Manifold Consistency Calibration (ELMC) mechanism for structure guided multi-view fusion. To avoid the circular dependency that arises when the late-fused representation is used to guide its own formation, ELMC establishes a bridge between early-stage adaptive sparse autoencoding and late-stage contrastive distribution alignment. Specifically, it measures graph-Laplacian consistency between each encoded local view and the early-fused global representation to derive adaptive view weights, thereby attenuating structurally unreliable views before late-fusion aggregation.
+   
+   \item[\ding{183}] We build MASA as a unified multi-view framework that integrates complementary constraints at three levels: sample-level feature extraction and reconstruction, relational manifold modeling within each view, and sample-wise distribution alignment between the global representation and local views. Within MASA, AVE adapts encoding to view-specific sparsity, ELMC performs reliability-aware structural fusion, and GLDA improves global-local consistency through contrastive distribution alignment.
+   
+   \item[\ding{184}] We conduct extensive experiments and diagnostic analyses to validate the design rationale of MASA. The studies examine sparse constraint placement, adaptive encoding, fusion strategy selection and the coordination between ELMC-guided fusion and contrastive distribution alignment. Results on image, image-text, omics and large-scale datasets demonstrate the effectiveness and robustness.
+\end{itemize}
+
+\subsection{Manifold learning}
+Manifold learning reveals low-dimensional nonlinear structures in high-dimensional data. Representative methods, including UMAP \cite{mcinnes2018umap}, Isomap \cite{11tenenbaum2000global}, Locally Linear Embedding \cite{12roweis2000nonlinear}, and Laplacian Eigenmaps \cite{13belkin2001laplacian}, preserve either global distances or local neighborhoods. For multi-view data, manifold alignment constructs inter-view correspondences while preserving view-specific geometry in a shared embedding space, enabling heterogeneous modality fusion \cite{14wang2008manifold,15hong2015multi}. Kumar et al.\ \cite{kumar2011co} and Xia et al.\ \cite{17xia2014robust} build view-specific affinity graphs and jointly optimize them to balance noise suppression and clustering coherence. To handle variations in view quality and structure, Nie et al.\ \cite{18nie2014clustering} and Sun et al.\ \cite{19sun2010canonical} introduce adaptive weighting schemes based on manifold fidelity, improving cross-view retrieval and heterogeneous data integration.
+
+Brahma et al.\ \cite{110brahma2015deep} and Zhang et al.\ \cite{111zhang2020deep} further combine neural networks with manifold embeddings for end-to-end nonlinear structure learning. Kong et al.\ \cite{112kong2025robust} construct a nearest-neighbor-based manifold connectivity matrix and integrate it with graph convolution, low-rank constraints, and pairwise constraints to alleviate view imbalance. However, existing methods seldom quantify local and global structural consistency in a unified framework or explicitly bridge early- and late-stage fusion from a structural perspective. To address these limitations, our method introduces manifold learning into the initial fusion stage, measures local and global inter-view similarities, and uses them as priors to guide heterogeneous view integration.
+
+  % \section{Related Works}
+  % \subsection{Manifold learning}
+  % Manifold learning has been extensively investigated for its capability to reveal
+  % low-dimensional nonlinear structures embedded within high-dimensional data,
+  % with seminal methods such as UMAP \cite{mcinnes2018umap}, Isomap \cite{11tenenbaum2000global},
+  % Locally Linear Embedding \cite{12roweis2000nonlinear} and Laplacian Eigenmaps
+  % \cite{13belkin2001laplacian} modeling geometric structure by preserving global
+  % distances or local neighborhood relationships. As the demand for multi-view data
+  % analysis grows, researchers have devised manifold alignment techniques that, by
+  % constructing inter-view correspondences and preserving each view’s intrinsic geometry
+  % within a shared embedding space, achieve effective fusion of heterogeneous
+  % modalities \cite{14wang2008manifold,15hong2015multi}. Building upon this paradigm,
+  % Kumar et al.\ \cite{kumar2011co} and Xia et al.\ \cite{17xia2014robust} each
+  % construct affinity graphs for individual views and subsequently perform joint
+  % optimization to integrate them, thereby balancing view-specific noise suppression
+  % with global clustering coherence. In recognition of the variability in data
+  % quality and structural complexity across views, Nie et al.\ \cite{18nie2014clustering}
+  % and Sun et al.\ \cite{19sun2010canonical} propose adaptive weighting schemes that
+  % allocate fusion weights in accordance with each view’s manifold fidelity,
+  % yielding improved performance in cross-view retrieval and heterogeneous data
+  % integration tasks.
+
+  % Concurrently, Brahma et al.\ \cite{110brahma2015deep} and Zhang et al.\ \cite{111zhang2020deep}
+  % introduce deep manifold learning models that integrate neural networks with manifold
+  % embeddings in an end-to-end fashion, enabling the adaptive capture and
+  % projection of complex nonlinear structures during training. Furthermore, Kong
+  % et al.\ \cite{112kong2025robust} employ nearest-neighbor embedding to construct
+  % a manifold connectivity matrix, which, when incorporated as a graph convolution
+  % operator alongside low-rank and pairwise constraint, substantially alleviates
+  % view imbalance. Existing approaches, however, have yet to quantify local and global
+  % structural consistency within a unified framework or to establish a principled bridge
+  % between early-stage and late-stage fusion based on view structure. To address
+  % above limitations, our method introduces manifold learning into the initial fusion
+  % phase to precisely measure both local and global inter-view similarities,
+  % using the resulting metrics as priors to adaptively guide the subsequent
+  % integration of heterogeneous view information.
+
+  % \subsection{Sparse representation and autoencoders}
+  % Sparse representation and autoencoders, as two prominent approaches in feature
+  % learning, have provided effective tools for addressing the challenges of
+  % representing high-dimensional heterogeneous data in unsupervised learning. Multi-view
+  % learning, which aims to extract and integrate information from multiple
+  % perspectives, benefits significantly from the combination of sparse representation
+  % and autoencoders. This synergy enables the capture of deep data features
+  % through sparse constraint and nonlinear mappings.
+
+  % Sparse representation, initially developed in the field of signal processing,
+  % represents signals as sparse linear combinations of dictionary bases, facilitating
+  % efficient feature extraction. The pioneering work of Olshausen and Field
+  % \cite{olshausen1997sparse} introduced the overcomplete dictionary learning
+  % framework based on sparse representation, laying the theoretical foundation for
+  % sparse representation. Subsequently, Mairal et al. \cite{mairal2009online}
+  % extended sparse representation to dynamic environments through online
+  % dictionary learning, allowing sparse representations to adapt to changes in multi-view
+  % latent spaces. In the context of multi-view learning, sparse representation has
+  % been widely employed to extract features from individual views and to model the
+  % correlations among different views via shared dictionaries. For instance, Yang
+  % et al. \cite{yang2009linear} combined sparse representation with image
+  % classification, demonstrating the efficacy of learned sparse features in enhancing
+  % the classification performance of each view in multi-view datasets. Similarly,
+  % Ji et al. \cite{peng2017deep} proposed the deep sparse subspace clustering
+  % framework, integrating sparse representations with deep networks to capture inter-view
+  % commonalities and discrepancies, thereby addressing feature alignment issues
+  % in multi-view clustering tasks.
+
+  % Autoencoders originate from the work of Hinton and Zemel~\cite{hinton1993autoencoders},
+  % who introduced autoassociators based on the information bottleneck to minimize
+  % reconstruction error for low-dimensional representation. Initially used for
+  % dimensionality reduction, their expressive power was expanded by nonlinear activations
+  % and deep stacking, as demonstrated in Hinton and Salakhutdinov’s deep
+  % autoencoder~\cite{hinton2006reducing}, which laid the foundation for multi-view
+  % learning. Ngiam et al.~\cite{ngiam2011multimodal} proposed multi-view autoencoders
+  % by leveraging shared hidden layers to model cross-view relations. With joint
+  % learning, autoencoders enable both intra-view encoding and inter-view alignment,
+  % as in Long et al.’s joint deep autoencoder~\cite{long2017deep}, achieving strong
+  % performance in cross-view transfer and multi-view alignment tasks. The
+  % integration of sparse representation and autoencoders has led to sparse
+  % autoencoders, a prominent topic in multi-view learning due to their ability to
+  % improve representation efficiency via sparsity constraint in hidden layers. Ng~\cite{ng2011sparse}
+  % introduced the classical sparse autoencoder, enhancing generalization by enforcing
+  % hidden-layer sparsity. Peng et al.~\cite{peng2018structured} extended this to structured
+  % autoencoders for subspace clustering, effectively modeling inter-view
+  % commonality and discrepancy. More recently, Xiao et al.~\cite{xiao2024sc} proposed
+  % SC-VAE, combining sparse representation with a learnable iterative shrinkage
+  % thresholding mechanism to mitigate posterior and codebook collapse in VAE
+  % models.
+
+  % Existing methods acknowledge view sparsity yet never quantify inter-view
+  % disparities or provide adaptive encoding strategies accordingly. In this paper,
+  % we formally define, statistically characterize, and analyze sparsity
+  % variations within multi-view datasets, and further propose a self-adaptive encoder
+  % guided by view-specific sparsity priors.
+
+  \section{The proposed Method}
+  In this section, we detail the proposed MASA framework, unfolded through three
+  cascaded functional levels, forming a stepwise refinement as illustrated in
+  the model overview~\ref{figure:framwork}. \textbf{Section~3.1} introduces the
+  differentiated encoding module, where we examine how the view-specific sparsity
+  ratio explicitly guides the autoencoder to adaptively transition between standard
+  and sparse modes, and how the associated sparsity constraint evolves
+  dynamically. \textbf{Section~3.2} focuses on the view imbalance-aware
+  measurement process, which formulates a metric of local--global manifold
+  consistency to quantify how early-stage structural cues can effectively inform
+  and regulate the late fusion process. \textbf{Section~3.3} turns to the
+  distribution alignment across arbitrary views, detailing how local compression
+  mechanisms and distribution alignment collaboratively contribute to the joint learning of global and local representations during late fusion.
+
+  \subsection{Adaptive View-specific Encoding}
+  \label{sec:ave} 
+To accommodate view-dependent sparsity patterns, we develop AVE, a sparsity-aware encoding module built upon sparse autoencoders, whose constraint strength is modulated by the sparsity ratio of each view. The reconstruction term preserves view-specific data fidelity, whereas the entropy-matching term imposes sparsity-adaptive regularization on latent activations according to the measured view sparsity degree. Such a design allows heterogeneous views to be encoded under tailored constraints, thereby enabling the learned representations to better reflect cross-view structural discrepancies.
+Let $\mathcal{V}=\{1,\dots,V\}$ denote the local-view set, with $\mathcal{V}^{+}=\mathcal{V}\cup\{G\}$ further including the global view. The early-fusion strategy integrates multi-view data through \textbf{feature concatenation}, which preserves the original feature values as much as possible so that the resulting global latent representation can guide the subsequent dynamically weighted fusion of local representations. 
+
+\textbf{Step 1: Reconstruction loss.}
+For each view $v\in\mathcal{V}^{+}$, the encoder-decoder branch first learns a latent representation whose reconstruction is expected to preserve the intrinsic information of the corresponding view. Let $\mathbf{X}^{v}\in\mathbb{R}^{N\times F_v}$ denote the input matrix of view $v$ and $\mathbf{R}^{v}\in\mathbb{R}^{N\times F_v}$ its reconstructed counterpart, where $N$
+  is the number of samples and $F_v$ is the feature dimension. The reconstruction loss is defined as:
+\begin{equation}
+\mathcal{L}_{\mathrm{rec}}^{v}
+=
+\frac{1}{N}
+\left\|
+\mathbf{R}^{v}
+-
+\mathbf{X}^{v}
+\right\|_{F}^{2}
+=
+\frac{1}{N}
+\sum_{j=1}^{N}
+\left\|
+\mathbf{r}_{j}^{v}
+-
+\mathbf{x}_{j}^{v}
+\right\|_{2}^{2},
+\label{eq:recon_loss}
+\end{equation}
+where $\mathbf{x}_{j}^{v}$ and $\mathbf{r}_{j}^{v}$ denote the original and reconstructed features of the $j$-th sample in view $v$, respectively. This objective encourages each view-specific encoder to retain the information required for faithful reconstruction, thereby providing a stable representation basis for subsequent sparsity-aware constraint modulation.
+
+\begin{figure}[h]
+  \centering
+  \vspace{-1em}
+\includegraphics[width=1\linewidth]{pictures/sparsity_purple.pdf}
+  \caption{Cross-view sparsity variation across multi-view data: (A) sparsity distribution across views and (B) view level min-max sparsity profiles within each data. Dot means one view or grouped overlapping views; diamond means dataset median; horizontal segment means min–max range; K means clusters and $\Delta$ means $\max(s_v)$ minus $\min(s_v)$.}
+  \label{figure:sparse} 
+  \vspace{-1.0em}
+\end{figure}
+\textbf{Step 2: View sparsity quantification.}
+As shown in Fig.~\ref{figure:sparse}, cross-view sparsity variations, whose degrees range from mild differences to pronounced discrepancies, are widely observed across multi-view data. Such prevalence reveals view sparsity discrepancy as a common manifestation of cross-view structural heterogeneity, motivating explicit measurement for adaptive constraint modulation.
+
+To quantify sparsity variations, we define the sparsity ratio $s_v$ for the $v$-th view as: 
+\begin{equation}
+s_v =
+\frac{1}{N F_v}
+\sum_{j=1}^{N}
+\sum_{i=1}^{F_v}
+\mathbbm{1}
+\left[
+\left|x_{j,i}^{v}\right| < \varepsilon_{\mathrm{norm}}
+\right],
+\label{eq:sparsity_ratio}
+\end{equation}
+where $x_{j,i}^{v}$ denotes the $i$-th feature of the $j$-th sample in view
+$v$, and $\mathbbm{1}[\cdot]$ is the indicator function that returns $1$ when the
+condition is satisfied and $0$ otherwise.
+
+% The threshold $\varepsilon_{\mathrm{norm}}$ is used as an implementation-level
+% near-zero tolerance for estimating view sparsity after feature normalization.
+% In our FP16 implementation, we set
+% $\varepsilon_{\mathrm{norm}}=6.10352\times10^{-5}$, corresponding to the
+% smallest positive normal value in FP16. Entries whose magnitudes are below this
+% threshold are treated as numerically negligible when computing the sparsity ratio.
+% This definition captures exact zeros as well as near-zero entries that have
+% limited numerical contribution, while avoiding the need for manually specifying
+% view-dependent thresholds.
+The threshold $\varepsilon_{\mathrm{norm}}$ denotes the smallest positive normal
+number representable in a given floating-point format. Values whose absolute
+magnitudes are smaller than $\varepsilon_{\mathrm{norm}}$ are counted as zeros
+when estimating the sparsity ratio. Since all experiments are conducted using
+FP16 precision, we set $\varepsilon_{\mathrm{norm}}=6.10352\times10^{-5}$. This
+setting allows the computed sparsity ratio to capture both exact zeros and
+entries in the subnormal range of the format, whose numerical precision is
+severely degraded, providing a more faithful characterization of view sparsity.
+
+  \textbf{Step 3: Adaptive Sparsity loss.} Motivated by the widespread presence of sparsity variations across views, our aim is to design a function that is positively correlated with $s_{v}$, allowing adaptive adjustments to both the encoder type and the strength of sparsity constraint. The design of the adaptive weighting factor $f(s_{v})$ follows a ReLU-like approach, adjusting the strength of $\mathcal{L}_{\text{entropy}}^{v}$ based on the probed input dataset sparsity $s_{v}$ for view $v$ in Eq. \eqref{eq:sparsity_ratio}:
+\begin{equation}
+f(s_v)=
+\begin{cases}
+0, & s_v \leq \theta, \\[2pt]
+\dfrac{s_v-\theta}{1-\theta}, & s_v > \theta,
+\end{cases}
+\label{eq:adaptive_factor_cn}
+\end{equation}
+with $\theta$ defaulting to $0.01$. Rather than being chosen arbitrarily, the threshold $\theta$ is determined according to the actual cross-view sparsity distribution of each data collection. As shown in Fig. \ref{figure:sparse}, most data collections, including MSRCV1 and Wikipedia, exhibit skewed sparsity distributions, where dense and sparse views are clearly separated. Thus, $\theta = 0.01$ serves as an effective threshold for selecting low-sparsity views. To enforce the sparsity constraint, we define the entropy matching loss using the Kullback-Leibler (KL) divergence \citep{kullback1951information}, which encourages the hidden-layer activations $\hat{h}^{v}_{k}$ to match the target sparsity level $\rho$.
+The sparsity loss based on entropy matching is formulated as:
+  \begin{equation}
+    \begin{aligned}
+    \mathcal{L}_{\text{sparse}}^{v} & = f(s_{v}) \cdot \mathcal{L}_{\text{ent}}^{v}                                                                                                                                                            \\
+    & = \!\frac{f(s_v)}{\!C \!\cdot \!H}\!\sum_{c=1}^{C}\!\sum_{k=1}^{H}\!\left( \!\rho \log \frac{\rho}{\hat{h}^v_{c,k}}\!+ \!(1 \!\!- \!\!\rho) \!\log \!\frac{\!1 \!- \!\rho}{\!1 \!- \!\hat{h}^v_{c,k}}\right)
+    \end{aligned}
+    \label{eq:entropy}
+  \end{equation}
+  where $H$ refers to the number of units in each hidden layer of the sparse encoder,
+  $C$ is the number of sparse layers, and $\rho$ is the target sparsity level.
+  $\hat{h}^{v}_{k}$ represents the average activation of the $k$-th hidden unit
+  for view $v$, which is clamped to lie strictly within the open interval from zero
+  to one. Following Ng \citep{ng2011sparse}, $\rho$ is set to 0.05, which is a well-validated
+  choice that balances sparsity and the learning capacity of the autoencoder,
+  allowing it to effectively capture key features in the data while avoiding
+  overfitting to irrelevant features. 
+
+  \textbf{Step 4: Adaptive Sparse Autoencoder.} When $s_{v}\leq \theta$, $\mathcal{L}_{\text{entropy}}^{v}$ is deactivated ($f
+  (s_{v}) = 0$) and the sparse autoencoder degenerates into a standard autoencoder.
+  Conversely, for input views where $s_{v}> \theta$, $f(s_{v})$ increases
+  linearly with $s_{v}$, ensuring that the sparsity constraint becomes more prominent
+  for highly sparse inputs. Based on the above, the loss function for AVE is given
+  by:
+\begin{equation}
+\mathcal{L}_{\mathrm{AVE}}
+=
+\sum_{v\in\mathcal{V}^{+}}
+\bigl(
+\mathcal{L}_{\mathrm{rec}}^{v}
++
+\mathcal{L}_{\mathrm{sparse}}^{v}
+\bigr).
+\label{eq:ave_loss}
+\end{equation}
+By using a piecewise linear design, AVE dynamically aligns the sparsity constraint with the input sparsity level while tailoring the encoding strategy to each view. 
+
+\subsection{Early-to-Late Manifold Consistency Calibration}
+\label{sec:elmc}
+After AVE learns the view-specific encoded representations $\mathbf{Z}_{v}$ for all local views and the early-fused global representation $\mathbf{Z}_{G}$, the late-fusion stage requires a reliability-aware calibration mechanism rather than assigning equal importance to all views. Since heterogeneous views may preserve the intrinsic neighborhood geometry with different degrees of fidelity, uniform fusion may introduce unreliable structural relations into the global representation. To this end, we introduce ELMC, which quantifies the geometric agreement between each local encoded representation and the early-fused global representation. The resulting consistency scores are normalized into adaptive view weights $w_v$, allowing the manifold structure captured during early fusion to guide the subsequent late-stage fusion.
+
+\textbf{Step 1: Pairwise distances.}
+For each local view $v\in\mathcal{V}$, let $\mathbf{Z}_{v}\in\mathbb{R}^{N\times F}$ denote the encoded view-specific representation, and let $\mathbf{Z}_{G}\in\mathbb{R}^{N\times F}$ denote the encoded early-fused global representation, where $N$ is the number of samples and $F$ is the dimensionality of the latent encoding space, and $\mathbf{Z}_{a}^{v}$, $\mathbf{Z}_{a}^{G}$ denote the $a$-th rows of $\mathbf{Z}_{v}$ and $\mathbf{Z}_{G}$, respectively. We first compute the pairwise Euclidean distance $\Delta_{ab}^{v}$ between samples $a$ and $b$ in view $v$ as:
+\begin{equation}
+\Delta_{ab}^{v}
+=
+\left\|
+\mathbf{Z}_{a}^{v}
+-
+\mathbf{Z}_{b}^{v}
+\right\|_{2},
+\quad
+a,b\in\{1,\dots,N\}.
+\label{eq:elmc_dist_v}
+\end{equation}
+The corresponding pairwise distance $\Delta_{ab}^{G}$ in the early-fused global space is defined as:
+\begin{equation}
+\Delta_{ab}^{G}
+=
+\left\|
+\mathbf{Z}_{a}^{G}
+-
+\mathbf{Z}_{b}^{G}
+\right\|_{2},
+\quad
+a,b\in\{1,\dots,N\}.
+\label{eq:elmc_dist_g}
+\end{equation}
+These distance matrices provide the geometric basis for comparing local and
+global sample-neighborhood structures in their encoded manifolds.
+
+\textbf{Step 2: Gaussian-kernel similarity matrices.}
+The pairwise distances are transformed into affinity values using a Gaussian
+kernel with bandwidth $\sigma>0$, which assigns larger similarities to nearby
+samples while exponentially suppressing distant sample pairs. For view $v$ and the early-fused global representation, let $\mathbf{W}_{v},\mathbf{W}_{G}\in\mathbb{R}^{N\times N}$ denote the corresponding similarity matrices. Their respective similarity values between samples $a$ and $b$, denoted by $W_{ab}^{v}$ and $W_{ab}^{G}$, are defined as:
+\begin{equation}
+\begin{aligned}
+W_{ab}^{v}
+&=
+\exp
+\left(
+-\frac{(\Delta_{ab}^{v})^2}{2\sigma^2}
+\right)
+=
+\exp
+\left(
+-\frac{
+\left\|
+\mathbf{Z}_{a}^{v}
+-
+\mathbf{Z}_{b}^{v}
+\right\|_{2}^{2}
+}{2\sigma^2}
+\right), \\
+W_{ab}^{G}
+&=
+\exp
+\left(
+-\frac{(\Delta_{ab}^{G})^2}{2\sigma^2}
+\right)
+=
+\exp
+\left(
+-\frac{
+\left\|
+\mathbf{Z}_{a}^{G}
+-
+\mathbf{Z}_{b}^{G}
+\right\|_{2}^{2}
+}{2\sigma^2}
+\right),
+\end{aligned}
+\label{eq:elmc_W}
+\end{equation}
+where $a,b\in\{1,\dots,N\}$. The bandwidth $\sigma$ is adaptively set to the
+median of all pairwise Euclidean distances in the early-fused global space,
+following the median heuristic commonly used in spectral clustering and kernel
+methods. The matrices $\mathbf{W}_{v}$ and $\mathbf{W}_{G}$ therefore encode the
+sample-neighborhood relations induced by $\mathbf{Z}_{v}$ and $\mathbf{Z}_{G}$,
+respectively. From a manifold learning perspective, these affinity matrices
+approximate the local connectivity of samples on the underlying manifold, where
+reliable views are expected to preserve neighborhood relations that are
+compatible with the global structural anchor.
+
+\textbf{Step 3: Degree matrices and graph Laplacians.}
+Given the similarity matrices $\mathbf{W}_{v}$ and $\mathbf{W}_{G}$, the
+corresponding degree matrices
+$\mathbf{D}_{v},\mathbf{D}_{G}\in\mathbb{R}^{N\times N}$ are diagonal matrices
+that collect the total affinity of each sample to all other samples. Their
+diagonal entries are computed as:
+\begin{equation}
+D_{aa}^{v}
+=
+\sum_{b=1}^{N}
+W_{ab}^{v},
+\quad
+D_{aa}^{G}
+=
+\sum_{b=1}^{N}
+W_{ab}^{G}.
+\label{eq:elmc_degree}
+\end{equation}
+The unnormalized graph Laplacians are then constructed as:
+\begin{equation}
+\mathbf{L}_{v}
+=
+\mathbf{D}_{v}
+-
+\mathbf{W}_{v},
+\quad
+\mathbf{L}_{G}
+=
+\mathbf{D}_{G}
+-
+\mathbf{W}_{G}.
+\label{eq:elmc_laplacian}
+\end{equation}
+The graph Laplacian characterizes the manifold structure at the operator level
+by encoding how each sample is connected to its neighbors in the induced
+similarity graph. Since the Laplacian captures both local connectivity and
+global graph organization, comparing $\mathbf{L}_{v}$ with $\mathbf{L}_{G}$
+allows ELMC to examine whether the neighborhood structure preserved by a local
+view is consistent with the global manifold.
+
+\textbf{Step 4: Geometric consistency score.}
+To measure the structural agreement between the manifold of view $v$ and the
+global manifold, ELMC computes the geometric consistency score as the
+Frobenius inner product of the two Laplacians:
+\begin{equation}
+S_v
+=
+\operatorname{Tr}
+\left(
+\mathbf{L}_{v}\mathbf{L}_{G}
+\right),
+\label{eq:elmc_Sv}
+\end{equation}
+where $\operatorname{Tr}(\cdot)$ denotes the trace operator. The score $S_v$
+aggregates the operator-level interaction between $\mathbf{L}_{v}$ and
+$\mathbf{L}_{G}$, jointly reflecting the alignment of the local and global
+manifold geometries and the overall energy carried by the view-induced
+similarity graph. The energy term acts as an implicit prior of view
+expressiveness: views whose encoded features exhibit stronger activation
+scales contribute proportionally more to the score. One may argue that the raw
+trace conflates structural alignment with view-specific scale information; we
+have considered this concern and deliberately retain the scale information,
+since it is exactly the cross-view scale discrepancy that the subsequent
+global-local distribution alignment in Section~3.3 needs to adapt to, and the
+consistency scores only need to preserve the relative ordering across views
+for the normalization in Step~5. A larger value of $S_v$ therefore indicates
+that the manifold induced by $\mathbf{Z}_{v}$ is more consistent with the
+manifold induced by $\mathbf{Z}_{G}$, suggesting that view $v$ contributes
+more reliable structural information to the late-fusion representation.
+
+\textbf{Step 5: Normalized view weights for late fusion.}
+The consistency scores $\{S_v\}_{v\in\mathcal{V}}$ are then normalized across
+all local views to obtain comparable fusion weights:
+\begin{equation}
+w_v
+=
+\frac{S_v}
+{\sum_{u\in\mathcal{V}}S_u},
+\quad
+\sum_{v\in\mathcal{V}}w_v=1.
+\label{eq:elmc_wv}
+\end{equation}
+The normalized weight $w_v$ represents the relative geometric consistency of
+view $v$ with respect to the early-fused global manifold. In this way, late
+fusion assigns larger weights to views whose local manifolds align well with the
+global structural anchor, while attenuating views whose manifold geometry is
+structurally unreliable.
+
+By substituting $\mathbf{L}_{v}=\mathbf{D}_{v}-\mathbf{W}_{v}$ and
+$\mathbf{L}_{G}=\mathbf{D}_{G}-\mathbf{W}_{G}$ into Eq.~\eqref{eq:elmc_Sv} and
+normalizing the scores as in Eq.~\eqref{eq:elmc_wv}, the
+view weight can be equivalently written as
+\begin{equation}
+w_v
+=
+\frac{
+\operatorname{Tr}
+\left[
+\left(\mathbf{D}_{v}-\mathbf{W}_{v}\right)
+\left(\mathbf{D}_{G}-\mathbf{W}_{G}\right)
+\right]
+}{
+\sum_{u\in\mathcal{V}}
+\operatorname{Tr}
+\left[
+\left(\mathbf{D}_{u}-\mathbf{W}_{u}\right)
+\left(\mathbf{D}_{G}-\mathbf{W}_{G}\right)
+\right]
+},
+\label{eq:weight_computation}
+\end{equation}
+which makes explicit that each view is weighted according to the agreement
+between its Laplacian-encoded manifold structure and the global
+Laplacian-encoded manifold structure, thereby establishing an early-to-late
+geometric calibration mechanism for multi-view fusion.
+
+\textbf{Robustness analysis.}
+ELMC admits a spectral-graph interpretation: the graph Laplacian characterizes
+the manifold induced by the similarity graph at the operator level. Since
+$\mathbf{L}_{v}$ and $\mathbf{L}_{G}$ are symmetric positive semi-definite, let
+$\mathbf{L}_{v}=\mathbf{U}_{v}\boldsymbol{\Lambda}_{v}\mathbf{U}_{v}^{\top}$
+and
+$\mathbf{L}_{G}=\mathbf{U}_{G}\boldsymbol{\Lambda}_{G}\mathbf{U}_{G}^{\top}$.
+Expressed in the eigenspaces of $\mathbf{L}_{v}$
+and $\mathbf{L}_{G}$, the consistency score in Eq.~\eqref{eq:elmc_Sv} can be
+expanded as:
+\begin{equation}
+\begin{aligned}
+S_v
+&=
+\operatorname{Tr}
+\left(
+\mathbf{L}_{v}\mathbf{L}_{G}
+\right)                                                   \\
+&=
+\sum_{i=1}^{N}
+\sum_{j=1}^{N}
+\lambda_i^{v}
+\lambda_j^{G}
+\left[
+(\mathbf{u}_{i}^{v})^{\top}
+\mathbf{u}_{j}^{G}
+\right]^2 .
+\end{aligned}
+\label{eq:elmc_spectral_score}
+\end{equation}
+Since every term of the double sum is non-negative and vanishes only when the
+corresponding eigenvectors of $\mathbf{L}_{v}$ and $\mathbf{L}_{G}$ are
+orthogonal, $S_v$ aggregates the spectral compatibility and eigenspace
+alignment between the local and global manifolds: eigenpairs shared by the two
+Laplacians contribute maximally, whereas mismatched eigenpairs reduce $S_v$.
+By Weyl's perturbation theorem, the spectrum of
+$\mathbf{L}_{v}$ cannot deviate from that of $\mathbf{L}_{G}$ beyond the
+perturbation magnitude:
+\begin{equation}
+\max_{i}
+\left|
+\lambda_i^{v}
+-
+\lambda_i^{G}
+\right|
+\leq
+\left\|
+\mathbf{E}_{v}
+\right\|_{2}.
+\label{eq:elmc_weyl_bound}
+\end{equation}
+A larger Laplacian deviation therefore implies stronger spectral instability,
+i.e., the eigenvalue-weighted alignment terms in
+Eq.~\eqref{eq:elmc_spectral_score} may depart further from the aligned case.
+Moreover, by the Davis--Kahan $\sin\Theta$ theorem
+\cite{davis1970rotation,yu2015useful}, for spectral subspaces
+$\mathbf{U}_{\mathcal{I}}^{v}$ and $\mathbf{U}_{\mathcal{I}}^{G}$ indexed by
+$\mathcal{I}$:
+\begin{equation}
+\left\|
+\sin\Theta
+\left(
+\mathbf{U}_{\mathcal{I}}^{v},
+\mathbf{U}_{\mathcal{I}}^{G}
+\right)
+\right\|_{2}
+\leq
+\frac{
+\left\|
+\mathbf{L}_{v}
+-
+\mathbf{L}_{G}
+\right\|_{2}
+}{
+\delta_{\mathcal{I}}
+},
+\label{eq:elmc_davis_kahan}
+\end{equation}
+where 
+\begin{equation}
+\delta_{\mathcal{I}}
+=
+\min_{i\in\mathcal{I},\,j\notin\mathcal{I}}
+\left|
+\lambda_i^{G}
+-
+\lambda_j^{G}
+\right|
+>
+0
+\label{eq:elmc_eigengap}
+\end{equation}
+is the eigengap of the global Laplacian subspace; the bound is nontrivial when
+the deviation is small relative to this gap. Hence, whenever $\mathbf{L}_{v}$
+deviates little from $\mathbf{L}_{G}$ compared with the spectral gap, both the
+eigenvalues (Weyl) and the eigenspaces (Davis--Kahan) of the local Laplacian
+remain close to the global ones, so the spectral alignment terms in
+Eq.~\eqref{eq:elmc_spectral_score} are stable and the resulting scores provide
+a reliable ordering of views for weighting.
+
+After normalization in Eq.~\eqref{eq:elmc_wv}, $S_v$ becomes a relative fusion
+weight that emphasizes spectrally consistent views while retaining their
+expressiveness, providing a spectral-graph justification for the
+reliability-aware calibration of ELMC under view-quality imbalance.
+
+  \subsection{Global-local Distribution Alignment}
+  Aligning features across views is a fundamental challenge in multi-view
+  learning, as it is crucial for leveraging the complementary information provided
+  by diverse views. GLDA addresses this issue by performing contrastive learning \cite{chen2020simple,li2021contrastive} between the late-fused
+  global features ($\overline{\mathbf{Y}}$) and the compressed features of
+  individual views ($\mathbf{Y}_{v}$), ensuring effective alignment of multi-view
+  features within a unified and shared latent space.
+
+  \textbf{Step 1: Late Fusion.} To mitigate the risk of dimensional collapse caused by an excessively large latent space during alignment, we introduce a compression layer before feeding the encoded view-specific features into the GLDA. Specifically, $\mathbf{Y}_{v}\in \mathbb{R}^{N \times F}$ is obtained from $\mathbf{Z}_{v}$ via the
+  compression layer. In parallel, the global feature $\overline{\mathbf{Y}}\in \mathbb{R}^{N \times F}$ is as follows:
+  \begin{equation}
+    \overline{\mathbf{Y}}= \mathcal{F}\left( \sum_{v\in\mathcal{V}}w_{v}\mathbf{Z}
+    _{v}\right),
+  \end{equation}
+  where the fusion function $\mathcal{F}$ corresponds to a late-fusion
+  multilayer perceptron, ensuring that the output dimensionality is aligned with
+  $\mathbf{Y}_{v}$. 
+  
+  \textbf{Step 2: View Distribution Alignment.} The fused and compressed
+  features are L2-normalized before computing pairwise similarities. The
+  similarity matrix $\mathbf{A}_{v}\in \mathbb{R}^{N \times N}$ between
+  $\overline{\mathbf{Y}}$ and $\mathbf{Y}_{v}$ is defined as:
+  \begin{equation}
+    \mathbf{A}_{v}= \frac{\overline{\mathbf{Y}}\cdot (\mathbf{Y}_{v})^{T}}{\tau}
+    ,
+  \end{equation}
+  with temperature $\tau$ scaling the similarities, $p,q$ index pairs in $\mathbf{A}_v$. Positive pairs, which are same samples across views, correspond to the diagonal elements $\mathbf{A}_{p,p}^v$; negative pairs, which are distinct samples across views, are identified through a mask $\mathbf{M}\in\mathbb{R}^{N\times N}$, where $\mathbf{M}_{p,q}=1$ for $p\neq q$ and $0$ otherwise.
+  % with $\tau$ denoting a temperature that scales the similarity values. The
+  % sample pairs position indices in $\mathbf{A}_{v}$ are defined as $p$ and
+  % $q$. Positive pairs, which correspond to the same samples across views, are represented
+  % by the diagonal elements of $\mathbf{A}_{v}$, denoted as
+  % $\mathbf{A}_{p,p}^{v}$. Negative pairs, which involve different samples
+  % across views, are identified using a mask matrix $\mathbf{M}_{v}\in \mathbb{R}
+  % ^{N \times N}$, where $\mathbf{M}_{p,q}^{v}= 1$ if $p \neq q$, and $\boldsymbol
+  % {M}_{p,q}^{v}= 0$ otherwise. 
+  To avoid the gradient saturation that afflicts standard InfoNCE when the positive term dominates the denominator, we exclude the positive sample from normalization, thereby sustaining persistent alignment and effective hard‑negative suppression.
+  The contrastive loss for each sample is:
+  \begin{equation}
+    \mathcal{L}_{con}^{p,v}= -\log \left(\frac{\exp(\mathbf{A}_{p,p}^{v})}{\sum_{q=1}^{N}\exp(\mathbf{A}_{p,q}^{v})
+    \cdot \mathbf{M}_{p,q}}\right),
+  \end{equation}
+  where $\exp(A_{p,p}^{v})$ quantifies the similarity of positive pairs, and the
+  denominator aggregates the exponential similarities of all pairs, weighted by the
+  mask matrix $\mathbf{M}$. The overall GLDA loss across all views is
+  obtained by summing the individual losses for each view and averaging over samples:
+  \begin{equation}
+    \mathcal{L}_{\text{GLDA}}= \sum_{v\in\mathcal{V}}\frac{1}{N}\sum_{p=1}^{N}\mathcal{L}_{con}
+    ^{p,v}. \label{eq:GLDA}
+  \end{equation}
+
+  The global view in GLDA serves as an anchor for parallel comparison with all local views, leveraging easy samples from one view to boost distinguishability of hard ones in another and thus strengthen class separability.
+
+\begin{algorithm}[ht]
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\caption{Training Workflow for MASA}
+\label{algo:MASA}
+\begin{algorithmic}[1]
+    \REQUIRE Multi-view data $\mathbf{X}_{v}$, cluster number $K$, pretraining epochs $E_{\mathrm{pre}}$, and alignment epochs $E_{\mathrm{con}}$.
+    \ENSURE Late-fused global representation $\mathbf{Y}_{\text{global}}$.
+    \STATE Initialize network parameters and the Adam optimizer.
+    \STATE Construct the early-fused global representation $\mathbf{X}_{G}$ by feature concatenation of $\{\mathbf{X}_{v}\}_{v\in\mathcal{V}}$.
+    \FOR{$epoch = 1 : E_{\mathrm{pre}} + E_{\mathrm{con}}$}
+        \STATE Learn the encoded representations $\{\mathbf{Z}_{v}\}_{v\in\mathcal{V}^{+}}$ through AVE by minimizing $\mathcal{L}_{\mathrm{AVE}}$ in Eq.~\eqref{eq:ave_loss}.
+        \IF{$epoch > E_{\mathrm{pre}}$}
+            \STATE Estimate manifold consistency scores $\{S_v\}_{v\in\mathcal{V}}$ between each local representation $\mathbf{Z}_{v}$ and the global representation $\mathbf{Z}_{G}$ via ELMC.
+            \STATE Derive adaptive view weights $\{w_v\}_{v\in\mathcal{V}}$ according to Eq.~\eqref{eq:weight_computation}.
+            \STATE Obtain the late-fused global representation $\mathbf{Y}_{\text{global}}$ by ELMC-guided fusion over $\{\mathbf{Z}_{v}\}_{v\in\mathcal{V}}$.
+            \STATE Refine $\mathbf{Y}_{\text{global}}$ with global-local distribution alignment by minimizing $\mathcal{L}_{\mathrm{total}}$ in Eq.~\eqref{eq:total_loss}.
+        \ENDIF
+    \ENDFOR
+    \STATE Perform $k$-means clustering on $\mathbf{Y}_{\text{global}}$.
+\end{algorithmic}
+\vspace{-0.3em}
+\end{algorithm}
+\vspace{-1.5em}
+  
+\subsection{The Overall Loss Function of MASA}
+The overall optimization objective is composed of \(\mathcal{L}_{\text{AVE}}\) in Eq.~\eqref{eq:ave_loss} and \(\mathcal{L}_{\text{GLDA}}\) in Eq.~\eqref{eq:GLDA}. ELMC introduces no extra loss term, but connects AVE and GLDA by calibrating late fusion and constructing the global representation for alignment:
+\begin{equation}
+\begin{aligned}
+\mathcal{L}_{\mathrm{total}}
+&=
+\mathcal{L}_{\mathrm{AVE}}
++
+\alpha \times \mathcal{L}_{\mathrm{GLDA}}  \\
+&=
+\sum_{v\in\mathcal{V}^{+}}
+\bigl(
+\mathcal{L}_{\mathrm{rec}}^{v}
++
+f(s_v)\mathcal{L}_{\mathrm{ent}}^{v}
+\bigr)
++
+\alpha \times \mathcal{L}_{\mathrm{GLDA}} .
+\end{aligned}
+\label{eq:total_loss}
+\end{equation}
+  where hyperparameter \( \alpha \) is constraint ratio coefficient that governs the balance between \( \mathcal{L}_{\text{AVE}} \) and \( \mathcal{L}_{\text{GLDA}} \). The training procedure for MASA is described in Algorithm \eqref{algo:MASA}.
+
+\section{Experiments}
+\subsection{Experimental Settings}
+\subsubsection{Compared Methods}
+
+% To establish a comprehensive experimental benchmark, the proposed MASA method is evaluated against 14 state-of-the-art deep learning-based unsupervised multi-view learning approaches. Each selected method represents a distinct technical paradigm designed to address specific challenges inherent to multi-view data analysis:
+To build a comprehensive benchmark, we evaluate MASA against 14 state-of-the-art deep learning-based unsupervised multi-view learning approaches. Each method represents a distinct technical paradigm addressing specific challenges in multi-view data analysis:
+
+\textbf{DCP{\tiny\textcolor{gray}{[TPAMI’22]}}\cite{lin2022dual}} unifies consistency learning and data recovery via joint mutual information maximization and entropy minimization.
+\textbf{MFLVC{\tiny\textcolor{gray}{[CVPR’22]}}\cite{MFLVCxu2022multi}} captures multi-level feature semantics by combining cross-view consistency learning with hierarchical feature reconstruction.
+\textbf{DSMVC{\tiny\textcolor{gray}{[CVPR’22]}}\cite{DSMVCtang2022deep}} integrates feature selection with noise reduction to maintain performance with increasing views. 
+\textbf{SURE{\tiny\textcolor{gray}{[TPAMI’22]}}\cite{SUREyang2022robust}} employs information-theoretic contrastive learning with noise robustness to mitigate view misalignment and data incompleteness.
+\textbf{DealMVC{\tiny\textcolor{gray}{[MM’23]}}\cite{Dealmvcyang2023dealmvc}} improves view consistency with global and local contrastive calibration.
+\textbf{GCFAgg{\tiny\textcolor{gray}{[CVPR’23]}}\cite{Gcfaggyan2023gcfagg}} leverages structural contrast across samples and views to learn consensus representations.
+\textbf{CPSPAN{\tiny\textcolor{gray}{[CVPR’23]}}\cite{CPSPANjin2023deep}} tackles misalignment via proxy supervision and prototype alignment to improve clustering fidelity. 
+\textbf{SDMVC{\tiny\textcolor{gray}{[TKDE’23]}}\cite{SDMVCxu2023self}} mitigates unclear clustering structures using pseudo-labels and a unified target distribution.
+\textbf{CVCL{\tiny\textcolor{gray}{[ICCV’23]}}\cite{CVCLchen2023deep}} learns view-invariant representations through cross-view contrastive learning to promote cluster consistency. \textbf{SCMVC{\tiny\textcolor{gray}{[TMM’24]}}\cite{SCMVCwu2024self}} resolves information conflicts via self-weighted contrastive fusion. \textbf{MVCAN{\tiny\textcolor{gray}{[CVPR’24]}}\cite{MVCANxu2024investigating}} suppresses noisy views using unshared parameters and iterative cross-view optimization. 
+\textbf{DCG{\tiny\textcolor{gray}{[AAAI’25]}}\cite{zhang2025incomplete}} models incomplete data distributions via diffusion-based contrastive generation. 
+\textbf{BRIDGE{\tiny\textcolor{gray}{[ICCV’25]}}\cite{jiang2025unified}} enhances robustness against non-IID missing patterns via adversarial learning and integrated imputation.
+\textbf{MISCC{\tiny\textcolor{gray}{[TMM’26]}}\cite{li2026deep}} promotes discriminative clustering through intra-view structure preservation and cross-view correlation alignment.
+  
+\subsubsection{Benchmark Datasets} 
+% The benchmark datasets encompass a diverse array of domains, exemplifying the extensive applicability and versatility of multi-view learning across a wide range of research disciplines, from computer vision and cross-modal learning to genomics and synthetic environments.
+The benchmark datasets span diverse domains, demonstrating the broad applicability and versatility of multi-view learning across disciplines from computer vision and cross-modal learning to genomics and synthetic environments.
+  
+In the domain of image recognition, \textbf{ALOI-100} constitutes a large-scale multi-view object collection, featuring complex structures that make it instrumental for research in object recognition and 3D reconstruction. \textbf{MSRCV1} focuses on object and scene categorization, while \textbf{Out-Scene} emphasizes natural scene classification, supporting tasks related to environmental perception and geographic categorization. Moving to cross-modal learning, \textbf{Wikipedia} integrates both image and text, providing valuable resources for image-text retrieval and highlighting the relationship between visual and linguistic data. In biomedical research, multi-view data predominantly arise from multi-omics profiling technologies which capture complementary molecular information from the biological sample. The use of genomic datasets such as \textbf{LGG} offers genomic data for brain tumors, while \textbf{BRCA} focuses on breast cancer, aiding research in disease prediction and personalized treatment. \textbf{GSE} serves as a comprehensive repository for analyzing high-throughput microarray data across multiple species and genome builds. Finally, in the realm of synthetic data, \textbf{Synthetic3d} provides essential 3D object data, which advances research in 3D recognition and modeling in virtual environments.
+\input{tables/Datasets}
+
+\subsubsection{Evaluation Metrics}
+We adopt three metrics to evaluate clustering performance from complementary perspectives: \textbf{Accuracy} (ACC), \textbf{Normalized Mutual Information} (NMI), and \textbf{Purity} (PUR). ACC measures the overall correctness of label assignments, NMI quantifies the shared information between clusters and true labels, and PUR assesses the homogeneity within each cluster. Additionally, the \textbf{Adjusted Rand Index} (ARI) is reported in certain comparisons to provide a chance-corrected measure of clustering similarity, which is particularly robust against imbalanced class distributions. Collectively, these metrics enable a comprehensive evaluation of both alignment with ground truth and intrinsic cluster quality.
+
+\subsubsection{Implementation Details}
+\input{tables/ComparativeResults}
+%   In terms of experimental equipment and configuration, we conducted our experiments using Python 3.9.25 and PyTorch 2.7.1+cu128, running on a Windows PC equipped with an Intel Core i5-14600KF CPU, 32GB of RAM and a Nvidia GeForce RTX 5070 GPU. 
+%   The models were trained with the Adam optimizer and a learning rate of 0.0003. To ensure reproducibility, we set the random seed at 50 and chose the batch size equal to the total number of samples in each dataset. Due to inherent randomness in sampling, the last results may exhibit slight variations.
+  
+% The training procedure comprises two stages: pretraining using only the autoencoders to extract decoupled global and local features, and alignment training using the full network architecture and loss to fuse information from different views. To balance the training efficiency with the number of training epochs, the pretraining is uniformly set to 300 epochs, while for alignment training, datasets with more than 2500 samples are set to 600 epochs, and datasets with fewer than 2500 samples are set to 300 epochs. For the features passed to the distance metric module, pre-training uses the global features $\mathbf{Z}_{v}$ obtained from early fusion, while alignment training uses features $\mathbf{Y}_{G}$ from late fusion. The distance metric module uniformly employs K-means\cite{macqueen1967multivariate}, with the number of clusters set to the number of categories in the dataset, and the number of initializations set to 100. 
+%   To ensure fairness, all reported results are averaged over 10 runs at the last epochs, rather than the best values during the training process. Moreover, all baseline methods follow a predefined set of criteria based on prior knowledge when setting hyperparameters, without fine-tuning based on external metrics for specific datasets. 
+For equipment and configuration, we conducted experiments using Python 3.9.25 and PyTorch 2.7.1+cu128 on a Windows PC with an Intel Core i5-14600KF CPU, 32 GB RAM, and an NVIDIA GeForce RTX 5070 GPU. The models were trained with Adam and a learning rate of 0.0003. Following the sensitivity analysis in Fig.~\ref{fig:sensitivity}, which shows that the most stable and accurate configurations across all datasets concentrate near $\tau=1$ and $\alpha=1$, we set the contrastive temperature $\tau$ and the loss-ratio coefficient $\alpha$ to $1$ in all experiments. To ensure reproducibility, we set the random seed to 50 and used a batch size equal to the total number of samples in each dataset. Due to sampling randomness, final results may vary slightly.
+The training procedure has two stages: pretraining with only autoencoders to extract decoupled global and local features, and alignment training with the full network architecture and loss to fuse information from different views. To balance training efficiency and epoch number, pretraining is uniformly set to 300 epochs, while alignment training is set to 600 epochs for datasets with more than 2500 samples and 300 epochs for datasets with fewer than 2500 samples. For features passed to the distance metric module, pretraining uses the global features $\mathbf{Z}_{G}$ obtained from early fusion, while alignment training uses features $\mathbf{Y}_{G}$ from late fusion. The distance metric module uniformly employs K-means\cite{macqueen1967multivariate}, with the number of clusters set to the number of categories in the dataset and the number of initializations set to 100. To ensure fairness, all reported results are averaged over 10 runs at the final epoch, rather than the best values during training. Moreover, all baseline methods follow predefined criteria based on prior knowledge when setting hyperparameters, without fine-tuning on external metrics for specific datasets.
+  % As a result, the comparison methods utilize the default preset hyperparameters. For methods with dataset-specific configurations, the hyperparameters used for the first dataset are applied uniformly across all datasets.
+
+  \subsection{Experimental Comparative Results}
+  Table \ref{table1:results1} summarizes the comparative evaluation of state-of-the-art methods for multi-view clustering. Analysis of these results yields the following insights:
+  
+  (1) Overall, our proposed method MASA achieves the best or near-best performance on all three evaluation criteria across the eight datasets, while exhibiting only limited rank variation from one dataset to another. This consistent behavior indicates that MASA is not merely tailored to specific benchmarks, but instead delivers strong generalization and robustness across diverse data distributions. By comparison, certain competing approaches can reach the top rank on particular datasets, with DCG on the LGG dataset and CPSPAN on the BRCA dataset serving as representative examples, yet their advantages do not reliably carry over to the remaining benchmarks.
+  % (1) Overall, our proposed method MASA achieves the best or near-best performance on all three evaluation criteria across the eight datasets, while exhibiting only limited rank variation from one dataset to another. This consistent behavior indicates that MASA is not merely tailored to specific benchmarks, but delivers strong generalization and robustness across diverse data distributions. By comparison, certain competing approaches reach the top rank on particular datasets, with DCG on LGG and CPSPAN on BRCA as representative examples, yet their advantages do not reliably carry over to the remaining benchmarks.
+  
+  (2) Furthermore, our method performs strongly on view-imbalanced datasets with substantial cross-view sparsity variations, such as ALOI-100, MSRCV1, and GSE. This validates that our approach, which integrates adaptive view-encoded manifold consistency into multi-view alignment and fusion, is less susceptible to the coupled effects of variational sparse feature patterns and uneven view influence. Meanwhile, on datasets without significant cross-view sparsity variations, like Out-Scene and LGG, our method maintains excellent performance, demonstrating that it does not sacrifice general applicability while specializing in challenging scenarios characterized by both view imbalance and cross-view sparsity variations.
+  
+  % (3) Looking further into metrics improvement consistency, MASA improves ACC (more correct assignments), NMI (higher cluster-to-class alignment) and PUR (lower intra-cluster mixing) simultaneously on big datasets like ALOI-100 and GSE, rather than excelling on a single criterion alone. This coherent improvement reflects a systematic refinement of the clustering structure, manifested in higher intra-cluster purity, clearer inter-cluster separation, and a more stable correspondence between predicted clusters and ground-truth classes. It also highlights the effectiveness of our method in cross-view representation alignment and complementary information fusion, enabling more consistent and discriminative clustering representations under challenging conditions.
+  (3) Looking further into metrics improvement consistency, MASA simultaneously improves ACC (more correct assignments), NMI (higher cluster-to-class alignment), and PUR (lower intra-cluster mixing) on large datasets such as ALOI-100 and GSE, rather than excelling on a single criterion. This coherence reflects a systematically refined clustering structure, with higher intra-cluster purity, clearer inter-cluster separation, and a more stable correspondence between predicted clusters and ground-truth classes. It also highlights the effectiveness of our method in cross-view representation alignment and complementary information fusion, enabling more consistent and discriminative clustering representations under challenging conditions.
+  
+  (4) In contrast, several methods exhibit a marked divergence between ACC and NMI: ACC remains competitive, yet NMI drops substantially, suggesting that although a large fraction of samples are assigned to the correct clusters, the overall correspondence between the learned partition and the ground-truth classes is not reliably preserved. For example, on the MSRCV1 dataset, SURE achieves an ACC of 91.43 but an NMI of only 85.84, whereas MASA attains an NMI of 98.19, indicating stronger global structural consistency beyond pointwise accuracy.
+
+  \input{tables/AblationStudy}
+  \subsection{Ablation Study}
+  \subsubsection{Loss function} 
+  The loss ablation study evaluates the effectiveness of each loss function by comparing different loss configurations across diverse data types, including the reconstruction constraint $\mathcal{L}_{\text{recon}}$ for the autoencoder, the sparsity-aware prior across heterogeneous views enforced by $\mathcal{L}_{\text{entropy}}$, and the global-local sample alignment regularization $\mathcal{L}_{\text{GLDA}}$ applied during the fusion stage. Throughout the experiments, the network architecture remains fixed, and only the loss formulation passed to the Adam optimizer is altered. Analysis of Table \ref{tab:loss_comparison} reveals that each added loss term contributes to the improved performance of unsupervised representations. Moreover, the constraint on sample alignment during the late-fusion stage proves to be more effective than that imposed by the adaptive autoencoder. Finally, the advantage of $\mathcal{L}_{\text{entropy}}$ becomes more evident on datasets exhibiting more pronounced cross-view sparsity variations, suggesting its ability to capture view-specific structural characteristics.
+  
+  
+  \subsubsection{Network component} 
+  Traditional sparse autoencoders are primarily designed to address data sparsity, whereas the proposed AVE module, which dynamically adjusts the sparsity regularization strength of the autoencoder by treating view sparsity as a prior, does not aim to resolve data sparsity or view sparsity themselves. Instead, AVE targets the challenge of cross-view sparsity variations. Accordingly, the component ablation study considers two experimental settings: one in which all views employ standard sparse autoencoders, and another in which each view adopts the adaptive sparse autoencoders AVE. Furthermore, to validate the effectiveness of the ELMC module for Manifold Consistency Calibration, ablation analyses of ELMC are conducted under both two settings. 
+
+  Results reported in Table \ref{tab:components} demonstrate that our proposed AVE module consistently enhances clustering performance compared with traditional sparse autoencoders, regardless of whether the datasets exhibit pronounced or relatively mild cross-view sparsity variations. Additional improvements are further observed with the inclusion of ELMC, whose manifold consistency calibration delivers consistent gains across both conventional and adaptive sparse encoding schemes. 
+
+  \input{tables/AblationComponents}
+
+    \subsubsection{Build MASA: From Zero to One}
+  This section presents ablation studies on each network component, fusion strategy, and loss selection, aiming to reconstruct the process of how the MASA architecture was built, and validate its reliability and effectiveness. Since PUR often yields similar results to ACC when the values are close to 100\%, the following experiments present the ARI metric.
+  
+  \textcolor{c1}{\textit{Adaptive sparse autoencoder:}} The encoder and decoder of MASA are both constructed with four network layers. Except for the output layer, which consists solely of a linear transformation, the remaining layers follow a sequential structure composed of a linear layer, an activation function, and a dropout operation. The decoder of the sparse autoencoder remains identical to that of the standard autoencoder, while sparsity in the encoding process is achieved by imposing constraints on the parameters of the internal encoder layers, thereby promoting sparse representations.
+  \input{tables/Ablation1}
+
+  Table \ref{tab:layer_comparison} shows that, for multi-view unsupervised representation learning, applying sparse constraints consistently across all hidden layers of the encoder achieves better performance than sparsifying only selected layers. This observation suggests that imposing sparsity on isolated layers is insufficient to effectively regulate redundancy across hierarchical representations. In contrast, extending sparsity to both hidden and output layers leads to a slight performance degradation, suggesting that excessive sparsity may restrict the expressive capacity of high-level representations. These results indicate that sparsity is most effective when applied within the encoder, while sufficient representational flexibility at the output layer remains essential.
+
+\textcolor{c1}{\textit{Manifold Consistency Calibration:}} The module for late fusion integrates compressed features from multiple views into a unified global representation. Table~\ref{tab:weight_comparison} systematically compares different fusion strategies. Without weighting, concatenation achieves better performance than summation, indicating its stronger capacity to retain complementary information across individual views. Once weighting based on manifold consistency is introduced, weighted summation outperforms weighted concatenation. This observation suggests that ELMC alleviates the representational limitation of summation through adaptive calibration across views, while the compact fused representation provides a more suitable basis for subsequent contrastive alignment. Therefore, MASA employs weighted summation for global representation learning in the late stage.
+  % \textcolor{c1}{\textit{Manifold Consistency Calibration:}} The late fusion module takes compressed local features from multiple views as input and aims to construct a unified global representation. This subsection focuses on a systematic analysis of different fusion strategies. Table \ref{tab:weight_comparison} indicates that concatenation outperforms summation fusion both in the unweighted setting and under manifold-structure similarity weighting. This suggests that, compared to element-wise summation, concatenation preserves complementary information across views more effectively, thereby providing more discriminative representations for subsequent clustering based on distance metrics in the latent space. 
+  
+\input{tables/Ablation2}
+Furthermore, manifold consistency calibration outperforms view-based kernel alignment weighting and sample-based attention mechanisms. Prior studies have shown that leveraging cross-view consistency to guide fusion enhances alignment accuracy and robustness in multimodal learning, providing a principled lens for understanding the mechanistic differences among fusion strategies \cite{yin2025semi}. Kernel alignment methods determine fusion weights through pairwise inter-view similarity computed via kernel matrices, a process that is highly sensitive to scale variations and cross-view noise, allowing minor feature perturbations to propagate into unstable fusion weights \cite{zhang2022fusion}. Recent work has further reported that existing late fusion strategies exhibit heightened sensitivity to noise and outliers during the alignment process \cite{yang2025mmlf}. Attention-based mechanisms, while enabling adaptive weighting, similarly rely on late-stage view features and can be disproportionately influenced by noisy views \cite{park2022manner}. Consequently, when fusion decisions are made solely at the late stage, both approaches risk integrating unreliable information under heterogeneous noise conditions. In contrast, manifold consistency calibration establishes an explicit early-to-late fusion coupling by leveraging structural information learned during the early-stage encoding and propagating it as a constraint to guide late fusion. Rather than relying on pairwise weighting schemes at the fusion stage, it aligns latent representations from different views along a shared data manifold inferred from early fusion, thereby mitigating the impact of view-specific noise and scale discrepancies. This constraint-driven formulation preserves cross-view geometric coherence throughout the fusion process and promotes more stable and robust multi-view feature integration.
+
+\textbf{Consistency score form.} The specific form of the geometric consistency score determines what information the calibrated weights carry, and hence directly affects the fusion behaviour of ELMC. Beyond the raw trace form in Eq.~\eqref{eq:elmc_Sv}, we examine several alternatives that are standard in their own right---cosine-normalized kernel alignment, distance-based deviation measures, and spectrally normalized Laplacians---to assess whether additional normalization or reformulation improves the calibration. All forms share the identical network, training procedure, random seed, and bandwidth setting; only the score formulation varies. Table~\ref{tab:consistency_measure} reports the comparison.
+
+  The results consistently favour the raw trace. We attribute this to a single mechanism: the raw trace is the only form that jointly preserves structural alignment and the energy of the view-induced similarity graph, whereas every alternative discards this energy at a different stage of the computation. The cosine-normalized form divides out the Laplacian norms, retaining only the directional agreement; consequently, views with identical structural direction but different activation scales are assigned equal weights, even though their actual contributions to the weighted summation $\sum_{v\in\mathcal{V}}w_{v}\mathbf{Z}_{v}$ remain scale-dependent. This mismatch between the calibrated weights and the realized contributions degrades the fusion. The distance-based form $\lVert\mathbf{L}_{v}-\mathbf{L}_{G}\rVert_{F}^{2}$ treats any energy difference between the two graphs as structural inconsistency, thereby over-penalizing views whose expressiveness differs from the global one even when their structures are aligned. The spectrally normalized Laplacian removes the influence of node degrees but, by construction, also removes the overall connection strength of each view---the carrier of its expressiveness---and additionally requires delicate handling of self-loops and isolated nodes. The input-normalized variant, which projects each $\mathbf{Z}_{v}$ onto the unit sphere before distance computation, eliminates the cross-view scale discrepancy at the very entry of ELMC, discarding the same energy information in advance. Notably, the last two forms do not normalize the score itself, which indicates that the decisive factor is not whether normalization is applied, but whether the view-energy information is preserved.
+
+  These observations confirm that the energy term in the raw trace serves as an implicit prior of view expressiveness that keeps the calibrated weights consistent with the actual contribution of each view in late fusion, and complements the cross-view alignment performed by GLDA. The consistent superiority of the raw trace across all compared forms therefore follows from a single, well-understood mechanism rather than from dataset-specific tuning.
+
+  \input{tables/ConsistencyMeasure}
+
+  \textbf{Kernel bandwidth setting.} Beyond the score form, the bandwidth of the Gaussian kernel also shapes the induced graphs. Eq.~\eqref{eq:elmc_W} adopts the median heuristic, the standard practice in spectral clustering and kernel methods, while other choices are possible. Table~\ref{tab:consistency_sigma} compares several representative settings under the raw trace form across three datasets: the median of the pairwise distances, a fixed bandwidth $\sigma=1$, the mean distance, a low quantile ($0.1$) of the distance distribution that emphasizes local neighborhoods, and per-sample local scaling based on the $k$-nearest-neighbour distance. The time column additionally reports the total training time in minutes, which mainly reflects the extra pass over the pairwise distances required by the adaptive bandwidth estimation.
+
+  The results indicate that the choice of the bandwidth setting trades off accuracy and efficiency rather than being dominated by a single option. [结论占位：median 效果最稳/或 fixed σ=1 性能接近——按实际数据填写] The fixed bandwidth $\sigma=1$ skips the bandwidth estimation pass and thus achieves the shortest training time; when the induced graphs remain well-conditioned under the current feature scale, its performance loss stays within an acceptable range, making it a viable efficiency-oriented alternative. The mean distance is more sensitive to outlier pairs than the median and hence less robust, the low quantile tends to produce sparser graphs that discard informative long-range connections, and per-sample local scaling incurs additional neighbourhood computation without a consistent accuracy gain. The median heuristic, by contrast, adapts the bandwidth to the actual distance scale and keeps the induced graph in a well-conditioned regime across datasets and training stages, consistent with the adaptive design principle of the whole framework, from the sparsity-adaptive encoding in AVE to the consistency-adaptive weighting in ELMC.
+
+  \input{tables/ConsistencySigma}
+
+While ELMC currently calibrates late fusion via passive view weighting, a future research direction is to elevate $S_v$ from an adaptive dynamic reliability score into a differentiable manifold alignment loss that actively reshapes local neighborhood geometry toward the global structural anchor during backpropagation.
+Such an elevation would call for thoughtful design, as it must avoid redundancy with the instance-level alignment that GLDA already establishes between the late-fused global representation and each local view. A principled way forward is to let the loss operate on neighborhood geometry at a structural granularity that individual features do not capture.
+
+  
+\input{tables/Ablation3}
+  \textcolor{c1}{\textit{Distribution Alignment:}} The global features obtained through late fusion are simultaneously aligned with local features across different views via contrastive learning, encouraging balanced distributional alignment among samples. As reported in Table~\ref{tab:Contrastive}, the unweighted cosine-based contrastive loss achieves the best performance, suggesting that increased methodological complexity does not inherently translate into superior representation quality. Additional weighting or extra architecture can introduce increased training sensitivity and harder to control gradient scale variations in the small-scale unsupervised learning setting we face. In contrast, adopting a simpler directional-consistency objective yields a more stable and better conditioned optimization process on datasets with relatively small sample sizes. 
+  
+  Notably, applying manifold consistency at the alignment stage does not work well, which can be attributed to a granularity mismatch between view-level structural calibration and instance-level contrastive alignment. View level structural calibration focuses on global geometry or manifold level correspondence, including neighborhood relations, cluster structure, and overall topology consistency. This signal is macro level and naturally matches fusion based weighting, where a single weight controls the contribution of each view to the global shared representation before late fusion. Instance level contrastive alignment operates at the sample level through pointwise pull and push forces, and its optimization signal depends strongly on batch composition and similarity distribution. Introducing view dependent weights or modulation at this level effectively applies non uniform scaling to sample level gradients, which can over amplify or over suppress certain views for certain samples, leading to under alignment or over alignment. Therefore, a more robust approach is to let structural calibration based on manifold handle macro consistency, let contrastive learning enforce sample consistency based on alignment.
+
+  \subsection{Convergence Analysis}
+  
+  Given that multi-view clustering is an unsupervised learning task, assessing the stability of clustering results without relying on external metrics is crucial.
+  
+  \begin{figure*}[htbp]
+    \centering
+    \subfigure[Out-Scene (Big dataset)]
+    { \includegraphics[width=0.318\textwidth]{pictures/Experiment/metrics/Out-Scene_clustering_performance.png} }\hspace{0.05cm}
+    \subfigure[ALOI-100 (Big dataset)]
+    { \includegraphics[width=0.318\textwidth]{pictures/Experiment/metrics/ALOI-100_clustering_performance.png} }\hspace{0.05cm}
+    \subfigure[MSRCV1 (Small dataset)]
+    { \includegraphics[width=0.318\textwidth]{pictures/Experiment/metrics/MSRCV1_clustering_performance.png} }
+    
+    \vspace{-0.8em} % 缩小 (a)(b)(c) 子图注释和主 caption 的距离
+    
+    \caption{Convergence analysis of the MASA training process on big (a-b) and small
+    (c) datasets. The left area of the vertical black dashed line represents
+    the pretraining phase, while the area to the right corresponds to the view
+    alignment training.}
+    \label{fig:convergence_ours}
+    \vspace{-1.2em} % 调整间距的值
+  \end{figure*}
+
+  Figure \ref{fig:convergence_ours} provides a convergence analysis of the clustering training dynamics, within which the evaluation metrics, examined across datasets of diverse scales and view cardinalities, are observed to improve in a stable and consistently progressive manner as the alignment procedure advances over successive training iterations. The overall objective function exhibits a smooth and sustained decline on datasets of larger sample size, while on small scale datasets it undergoes a bounded oscillatory descent within a restricted interval, a behavior through which the stability of the performance metrics and the continuity of performance gains are preserved rather than undermined.
+  
+  \begin{figure}[t]
+  \vspace{-0.5em}
+    \centering
+    \includegraphics[width=0.90\linewidth]{pictures/MVC/Convergence.png}
+
+    \vspace{-0.5em}
+    
+    \caption{Performance stability on the ALOI-100 dataset. The left bars show the evaluation metric values at \textcolor{c1}{the last epochs (bottom)} and \textcolor{c3}{the best epoch (top)}, while the right bars represent \textcolor{c2}{the standard deviation at the last epochs}.}
+    \label{figure:stability}
+    \vspace{-1.5em} % 调整间距的值
+  \end{figure}
+  
+To characterize the clustering stability of different methods, we analyze two complementary aspects: the performance and its fluctuation standard deviation over the final rounds, together with the maximum performance attained during optimization. 
+The last performance over the final epochs reflects both the clustering quality sustained after convergence and the structural consistency of the learned global representation. By contrast, the maximum performance reveals the transient discriminative potential of the learned representation beyond its converged behavior.
+Considering the pronounced view-level sparsity heterogeneity and the relatively large sample scale, we choose ALOI-100 as the benchmark. Figure \ref{figure:stability} reports the instantaneous peak ACC observed throughout training for each method, together with the mean and standard deviation of its last performance over the final epochs.
+Although DealMVC and MFLVC can attain competitive clustering results, such performance proves difficult to sustain, as substantial fluctuations arise with training progression and hyperparameter variations
+SCMVC, BRIDGE, and MASA achieve comparable peak performance, whereas MASA exhibits a more robust stability profile across the training process.
+MISCC exhibits a marginal gain in peak ACC over weaker baselines.
+MVCAN demonstrates comparatively strong stability, albeit with a slightly lower performance ceiling.
+
+
+  \subsection{Visualization}
+
+  \begin{figure*}[ht]
+    \centering
+    \subfigure[100 (Early-fused)]
+    { \includegraphics[width=0.378\columnwidth]{pictures/Experiment/t-sne/ALOI-100/99_ALOI-100_EarlyFusion.pdf} }
+    \subfigure[200 (Early-fused)] { \includegraphics[width=0.378\columnwidth]{pictures/Experiment/t-sne/ALOI-100/199_ALOI-100_EarlyFusion.pdf} }
+    \subfigure[300 (Early-fused)]
+    { \includegraphics[width=0.378\columnwidth]{pictures/Experiment/t-sne/ALOI-100/299_ALOI-100_EarlyFusion.pdf} }
+    \subfigure[400 (Late-fused)] { \includegraphics[width=0.378\columnwidth]{pictures/Experiment/t-sne/ALOI-100/399_ALOI-100_LateFusion.pdf} }
+    \subfigure[500 (Late-fused)]
+    { \includegraphics[width=0.375\columnwidth]{pictures/Experiment/t-sne/ALOI-100/499_ALOI-100_LateFusion.pdf} }
+
+    \vspace{-1.0em}
+    
+    \caption{The evolution of global representations on the ALOI-100 dataset is visualized by t-SNE, where early epochs show the early-fused global $\mathbf{Z}_{G}$ and later epochs show the late-fused global $\mathbf{Y}_{\text{global}}$.}
+    \label{fig:allvis}
+    \vspace{-10pt} % 调整间距的值 \cite{van2008visualizing}
+  \end{figure*}
+  
+  % The two-dimensional embedding in Fig. \ref{fig:allvis} provides a depiction of the global representations formed at successive stages of training, through which the progressive reorganization of the latent space along the optimization trajectory becomes evident. At early stages, samples associated with different categories remain substantially intermixed, accompanied by diffuse intra-class structures and indistinct inter-class boundaries; with continued training, samples increasingly coalesce within semantically coherent regions, yielding progressively tighter intra-class compactness and more pronounced inter-class separability, a pattern that reflects the capacity of the late-fusion mechanism to shape a global latent space of enhanced discriminability and structural robustness as coherent alignment is established between the global representation and each local view via mutually independent yet collectively reinforcing alignment paths.
+The two-dimensional embeddings in Fig.~\ref{fig:allvis} visualize the evolution of the global representation during training. At epoch 100 during early fusion, samples from different categories remain highly entangled, with mixed regions and weak class boundaries. From epochs 200 to 300, the embeddings begin to reorganize into smaller local neighborhoods, suggesting that the autoencoder gradually captures category structure, although some clusters remain adjacent or partially overlapped. After late fusion is activated, the embeddings at epochs 400 and 500 become more compact and spatially separated, with many categories forming clearer local islands. This progression shows that fusion guided by manifold consistency and alignment between global and local representations gradually reshape the latent space, thereby improving intra-class compactness and inter-class separability and yielding a more discriminative and structurally robust global representation for multi-view fusion.
+
+  \subsection{From Single-view to Multi-view}
+  The training of MASA is organized into two successive stages: an initial view-wise training phase in which only early fusion and the autoencoder components are activated, followed by a full collaborative training phase that incorporates late fusion together with distributional alignment. A comparative examination of the weight dynamics and performance curves across these two stages enables a systematic assessment of the behaviors of single-view training, the global representation induced by early fusion, and the global representation shaped under late fusion, while further elucidating whether multi-view fusion effectively aggregates and consolidates the complementary strengths inherent in individual views.
+
+\begin{figure*}[htbp]
+  \centering
+  \setlength{\subfigcapskip}{-2pt}
+  \subfigure[Out-Scene]
+  { \includegraphics[width=0.318\textwidth]{pictures/Experiment/WeightsView/fusion_weights_Out-Scene.png} }\hspace{0.05cm}
+  \subfigure[GSE]
+  { \includegraphics[width=0.318\textwidth]{pictures/Experiment/WeightsView/fusion_weights_GSE.png} }\hspace{0.05cm}
+  \subfigure[MSRCV1]
+  { \includegraphics[width=0.318\textwidth]{pictures/Experiment/WeightsView/fusion_weights_MSRCV1.png} }
+
+  \vspace{-1.0em}
+    
+    \caption{Performance curves over training epochs of late fusion view weights ($w_v$) guided by manifold consistency calibration.}
+    \label{fig:resline}
+    \vspace{-10pt} % 调整间距的值
+  \end{figure*}
+
+  The evolution of view weights depicted in Figure \ref{fig:resline} indicates that, during the phase of independent view-wise training, the correlations established between each local view and the global representation remain persistently unstable, exhibiting pronounced fluctuations that preclude the formation of a coherent and convergent weighting regime, while the identity of the dominant view alternates across training stages, thereby undermining the consistency of the fusion structure. With the introduction of the dynamic fusion and alignment mechanism, a dominant view gradually emerges and retains stability, accompanied by a marked contraction in the amplitude of weight fluctuations across views. 
+
+  \begin{figure*}[htbp]
+    \centering
+    \setlength{\subfigcapskip}{-2.9pt} % 缩小子图和子图注间的距离
+    \subfigure[Out-Scene (Big dataset)]
+    { \includegraphics[width=0.396\textwidth]{pictures/Experiment/View2/Out-Scene_acc.pdf} }\hspace{-0.05cm}
+    \subfigure[MSRCV1 (Small dataset)]
+    { \includegraphics[width=0.580\textwidth]{pictures/Experiment/View2/MSRCV1_acc.pdf} }
+
+    \vspace{-0.9em}
+    
+    \subfigure[Out-Scene (Big dataset)] { \includegraphics[width=0.396\textwidth]{pictures/Experiment/View2/Out-Scene_nmi.pdf} }\hspace{-0.05cm}
+    \subfigure[MSRCV1 (Small dataset)] { \includegraphics[width=0.580\textwidth]{pictures/Experiment/View2/MSRCV1_nmi.pdf} }
+
+    \vspace{-1.0em}
+    
+    \caption{Performance curves of different local views and the global representation over training epochs, with (a,b) reporting ACC and (c,d) reporting NMI. The gray curve denotes the global, while the other colored curves correspond to local views.}
+    \label{fig:view_acc_nmi}
+    \vspace{-10pt} % 调整间距的值
+  \end{figure*}
+
+  Complementary evidence can be derived from the performance trajectories in Figure \ref{fig:view_acc_nmi}: (1) under independent single-view training, substantial disparities in clustering performance arise across views, as exemplified by the red view on Out-Scene and the blue view on MSRCV1; once collaborative training is activated, the performance of all local views exhibits a tightly coupled ascent in concert with the global representation; (2) the collaborative training stage is characterized by a smoother and more sustained performance progression, with a significantly narrower fluctuation range than that observed during independent training. These empirical patterns offer mechanistic support for the proposed manifold-consistency calibration and global–local alignment strategy, through which independently operating alignment pathways collectively regulate view contributions, attenuate inter-view representational drift, and thereby enable the complementary integration of multi-view information while promoting a more stable and reliable convergence behavior of the clustering process.
+
+  \subsection{Feature dimension and compression}
+  Within representation learning, different training stages exhibit inherently distinct requirements with respect to latent space capacity. The encoding stage typically benefits from a high-capacity latent space to effectively capture complex and latent semantic structures in the data. In contrast, the subsequent fusion and alignment stage, particularly when contrastive learning objectives are employed, often favors more compact representations, as excessively high-dimensional latent spaces may impair discriminability and destabilize optimization. This discrepancy gives rise to an intrinsic trade-off in latent space capacity allocation. Motivated by this observation, we introduce a dimensionality reduction module to achieve effective coordination of latent space capacity across different learning stages.
+  \begin{figure*}[htbp]
+    \centering
+    \subfigure[Synthetic3d (Manifold)]
+    { \includegraphics[width=0.315\textwidth]{pictures/Experiment/dims/Synthetic3d_clustering_performance.png} }\hspace{0.05cm}
+    \subfigure[MSRCV1 (Manifold)]
+    { \includegraphics[width=0.315\textwidth]{pictures/Experiment/dims/MSRCV1_clustering_performance.png} }\hspace{0.05cm}
+    \subfigure[Out-Scene (Manifold)]
+    { \includegraphics[width=0.315\textwidth]{pictures/Experiment/dims/Out-Scene_clustering_performance.png} }
+
+    \vspace{-1.0em}
+    
+    \caption{The evaluation metric curves of Synthetic3d, MSRCV1, and Out-Scene
+    datasets with respect to feature ($\mathbf{Z}_{v}$) dimension variations
+    with early-to-late manifold consistency calibration (a-c).}
+    \label{fig:dims}
+    \vspace{-12pt} % 调整间距的值
+  \end{figure*}
+
+  Feature dimensionality fundamentally characterizes the capacity of the latent space. As shown in Fig. \ref{fig:dims}, increasing the feature dimension consistently enhances the clustering performance of MASA, followed by a stable regime at higher dimensionalities, without exhibiting dimensional explosion or performance degradation associated with overly expansive latent spaces. These empirical results indicate that the proposed dimensionality reduction module successfully balances the high-capacity representation demands of the encoding stage with the compact latent space preferred during global–local alignment. As a result, MASA achieves stable, robust, and well-generalized feature learning.
+  
+  \subsection{Parameter Sensitivity Analysis}
+  To investigate the robustness of our proposed model with respect to key hyperparameters,
+  we conduct a detailed sensitivity analysis involving the contrastive
+  temperature $\tau$ and the loss ratio $\alpha$. Both coefficients
+  were varied exponentially from $2^{-3}$ to $2^{3}$ with a scaling factor of 2.
+  Performance variations across four representative datasets, as illustrated in
+  Figure~\ref{fig:sensitivity}, give rise to several notable observations:
+
+  \noindent
+  \textcolor{c1}{\textit{Impact and nonlinear interaction of hyperparameters:}}
+  Among the two parameters, the temperature $\tau$ has a more substantial impact
+  on model performance, especially in cases where contrastive learning dominates
+  the representation learning process. Notably, the interaction between $\tau$
+  and $\alpha$ is highly nonlinear: the influence of one parameter
+  often depends on the specific value of the other. For instance, the performance
+  gain or drop due to increasing $\tau$ becomes more significant when $\alpha$ lies in a moderate range, indicating a strong coupling effect
+  that suggests these parameters should be tuned jointly rather than
+  independently.
+
+  \noindent
+  \textcolor{c1}{\textit{Optimal region and dataset-specific variation:}}
+  Across all datasets, the best accuracy is generally observed when both $\tau$
+  and $\alpha$ are close to 1. This suggests that a balanced
+  configuration ensures optimal synergy between discriminative embedding
+  learning and reconstruction fidelity. By contrast, the sensitivity to parameter
+  variation differs by dataset. For example, \textit{Synthetic3D} remains stable
+  across a wide parameter range, whereas \textit{Out-Scene} exhibits sharp degradation
+  when $\tau$ deviates from the optimal region. This discrepancy highlights the
+  impact of underlying data structure and modality on parameter robustness.
+
+  \noindent
+  \textcolor{c1}{\textit{Non-Monotonic trend with asymmetric degradation:}} 
+  In most scenarios, model performance first increases as $\tau$ or $\alpha$ approaches the optimal range, then decreases rapidly once the parameters exceed it. This non-monotonic pattern becomes more severe for overly large values, potentially due to overemphasis on one objective leading to unstable training dynamics or degraded feature representations.
+  Extremely high values, such as $8$ for $\alpha$ or $\tau$, frequently cause abrupt accuracy drops, implying that such configurations may impair convergence or disrupt the learned embedding structure.
+
+  \begin{figure*}[htbp]
+    \centering
+    \subfigure[MSRCV1]{ \includegraphics[width=0.24\linewidth]{pictures/Experiment/sensitivity/MSRCV1_rounds.png} }\hspace{-0.2cm}
+    \subfigure[Out-Scene]{ \includegraphics[width=0.24\linewidth]{pictures/Experiment/sensitivity/Out-Scene_rounds.png} }\hspace{-0.2cm}
+    \subfigure[Synthetic3D]{ \includegraphics[width=0.24\linewidth]{pictures/Experiment/sensitivity/Synthetic3d_rounds.png} }\hspace{-0.2cm}
+    \subfigure[Wikipedia]{ \includegraphics[width=0.24\linewidth]{pictures/Experiment/sensitivity/Wikipedia_rounds.png} }
+
+    \vspace{-1.0em}
+    
+    \caption{The 3D bar chart of clustering accuracy under different
+    configurations of the temperature $\tau$ and loss ratio $\alpha$,
+    providing insights into the parameter sensitivity of our proposed model over
+    four representative datasets.}
+    \label{fig:sensitivity}
+    \vspace{-12pt} % 调整间距的值
+  \end{figure*}
+
+\section{CONCLUSION}
+MASA establishes a structurally guided fusion framework for multi-view clustering by imposing distinct constraints at the feature, manifold, and distribution levels. AVE alleviates encoding mismatch caused by sparsity through adaptive constraints across views, while ELMC serves as the central mechanism of MASA by leveraging manifold consistency between global and local features to bridge early representation learning and late fusion decisions. GLDA further extends calibration from fusion to alignment by coupling compressed local features with global features via contrastive learning. 
+Extensive ablations, comparative analyses, and modular architecture studies show that MASA gains stem from the coordinated interaction of constraints across multiple levels rather than from any isolated module.
+The experimental findings further indicate that robust multi-view clustering should go beyond direct view aggregation by designing fusion and alignment mechanisms around the intrinsic manifold structure of data.
+
+% \section*{Acknowledgments}
+
+\ifCLASSOPTIONcaptionsoff
+\newpage
+\fi
+
+\bibliographystyle{IEEEtran}
+\bibliography{References}
+
+% \begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-LiuRuimeng.png}}]{Ruimeng Liu} is currently pursuing the Ph.D. degree in the School of Computer Science and Technology, Huazhong University of Science and Technology, Wuhan, China. He received the B.Eng. degree in Mechanical Design, Manufacturing, and Automation from the China University of Geosciences (Wuhan) in 2022, where he is also completing the M.Eng. degree in the school of Computer Science. His current research interests include multimodal representation learning and self-supervised learning, with a particular focus on investigating their interpretability and applications in computer vision and bioinformatics. More information can be found at \url{https://github.com/cleste-pome}.
+% \end{IEEEbiography}
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-LiuRuimeng.png}}]{Ruimeng Liu} is pursuing the Ph.D. degree with the School of Computer Science and Technology, Huazhong University of Science and Technology, Wuhan, China. He received the B.Eng. degree in Mechanical Design, Manufacturing, and Automation from China University of Geosciences (Wuhan) in 2022, where he is also completing the M.Eng. degree in Computer Science in 2026. His research interests include multimodal representation learning and self-supervised learning, focusing on interpretability and applications in computer vision and bioinformatics. More information is available at \url{https://github.com/cleste-pome}.
+\end{IEEEbiography}
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-TangChang.png}}]{Chang Tang (Senior Member, IEEE)} 
+received his Ph.D. degree from Tianjin University, Tianjin, China in 2016. He joined the AMRL Lab of the University of Wollongong between Sep. 2014 and Sep. 2015. He is now a full Professor at the School of Software Engineering, Huazhong University of Science and Technology, Wuhan, China. Dr. Tang has published 100+ peer-reviewed papers, including those in highly regarded journals and conferences such as IEEE T-PAMI, IEEE T-MM, IEEE T-KDE, IEEE T-HMS, ICCV, CVPR, IJCAI, AAAI and ACM MM, etc. He serves as an associate editor of Neural Networks, IEEE Journal of Biomedical and Health Informatics, CAAI Transactions on Intelligence Technology, and BMC Bioinformatics. He regularly serves on the Technical Program Committees or as Area Chair of some top conferences such as NIPS, ICML, CVPR, ICCV, ECCV, IJCAI, ICME and AAAI. His current research interests include multi-modal learning and pattern recognition.
+\end{IEEEbiography}
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-BoWang.png}}]{Bo Wang} received the B.S. degree in Communication Engineering from Xidian University, Xi'an, China, in 2017, and the Ph.D. degree in Instrument Science and Technology from Tsinghua University, Beijing, China, in 2023. He is currently an Associate Researcher at Huazhong University of Science and Technology, Wuhan, China.
+His research interests include Medical Image Segmentation, Surgical Planning, and the application of Artificial Intelligence in Medical Instrumentation.
+ORCID: https://orcid.org/0000-0002-0788-5353
+bow@hust.edu.cn.
+\end{IEEEbiography}
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-ZhenglaiLi.png}}]{Zhenglai Li (Member, IEEE)} obtained his Ph.D., M.S., and B.E. degrees from the China University of Geosciences, Wuhan, China, in 2024, 2021, and 2018, respectively. He is currently a postdoctoral research fellow at the Shenzhen Institute of Advanced Technology, Chinese Academy of Sciences, Shenzhen, China. Dr. Li has published 20 peer-reviewed papers in highly regarded journals and conferences, including IEEE TKDE, IEEE TMM, IEEE TIP, IEEE TCSVT, IEEE TGRS, and ACM MM. He regularly serves on the Technical Program Committees for leading conferences such as NeurIPS, ICLR, KDD, and ACM MM. His current research interests include machine learning and computer vision, with a focus on unsupervised learning, clustering, multi-view/multi-modal representation learning algorithms, and their applications in healthcare.
+\end{IEEEbiography}
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-GuoLianbo.png}}]{Lianbo Guo (Senior Member, IEEE)} received his Ph.D. degree from Huazhong University of Science and Technology (HUST), Wuhan, China in 2012. He is now a full Professor with the School of Software Engineering, HUST and Deputy Director of the Laser Division, Wuhan National Laboratory for Optoelectronics (WNLO). He currently serves as Standing Committee Member of COES LIBS Professional Committee, Committee Member of COS Laser Spectroscopy Professional Committee, and Chairman of ASLIBS Young Scientists Committee. His research focuses on LIBS and multimodal intelligent sensing of laser probes. He has presided over/participated in over 20 national-level projects. As first/corresponding author, he has published 120+ SCI papers in Adv. Mater., ACS Photonics et al., with 5,000+ citations, and holds 25 authorized invention patents (US/China).
+\end{IEEEbiography} 
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{Figures/Author-LiuXinwang.png}}]{Xinwang Liu (Senior Member, IEEE)} 
+received his PhD degree from National University of Defense Technology (NUDT), China. He is now a full professor at the School of Computer, NUDT. His current research interests include kernel learning and unsupervised feature learning. Dr. Liu has published 60+ peer-reviewed papers, including those in highly regarded journals and conferences such as IEEE T-PAMI, IEEE T-KDE, IEEE T-IP, IEEE T-NNLS, IEEE T-MM, IEEE T-IFS, NeurIPS, ICCV, CVPR, AAAI, IJCAI, etc. He is a senior member of IEEE. More information can be found at \url{xinwangliu.github.io}.
+\end{IEEEbiography}
+
+\end{document}
