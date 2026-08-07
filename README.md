@@ -1,5 +1,5 @@
 # MASA
-## **[TPAMI 2026 (under review)✨]** **Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration** 🚀
+## **Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration** 🚀
 
 <p align="center">
   <a href="https://github.com/cleste-pome">Ruimeng Liu</a>, 
@@ -19,9 +19,9 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 </p>
 
 ### 📑 Table of Contents
-- [🧩 Method Overview: Three Core Modules](#method-overview-three-core-modules)
-- [🔗 Citation](#citation)
-- [⌨️ Source code list](#source-code-list)
+- [🧩 Method Overview: Three Core Modules](#-method-overview-three-core-modules)
+- [🔗 Citation](#-citation)
+- [📂 Source code list](#-source-code-list)
 - [1. 📊 Dataset](#1-dataset)
 - [2. ✅ Run](#2-run)
 - [3. 🧮 Main Code](#3-main-code)
@@ -45,14 +45,12 @@ If our paper or code inspires you, please cite this paper when it is available�
 ```
 @article{liu2026masa,
   author={Ruimeng, Liu and Chang, Tang and Bo, Wang and Zhenglai, Li and Lianbo, Guo and Xinwang, Liu},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
   title={Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration},
   year={2026}
 }
 ```
-> DOI will be added once the paper is published.
 
-### ⌨️ Source code list:
+### 📂 Source code list:
 
 ```shell
 MASA
