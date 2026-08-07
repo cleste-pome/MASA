@@ -39,7 +39,7 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 - [2. ✅ Run](#2-run)
 - [3. 🧮 Main Code](#3-main-code)
 - [4. 🔬 Loss](#4-loss)
-- [5. 🧩 Method Overview](#5-method-overview-three-core-modules)
+- [5. 🧩 Method Overview](#5--method-overview)
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
 
 ### 🔗 Citation
@@ -164,13 +164,28 @@ score form and bandwidth setting can be switched at the top of
 `GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
 ablation tables.
 
-The overall objective of the consistency training stage is the **total loss**:
+The overall optimization objective is composed of the AVE loss and the GLDA loss; ELMC introduces no extra loss term, but connects them by calibrating the late fusion. The **total loss** is:
 
-$$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con} = \|\mathbf{x} - \hat{\mathbf{x}}\|_F^2 + \beta \cdot \mathrm{KL}(\rho \,\|\, \hat{\rho}) + \alpha \cdot \ell_{con}(H, r_v)$$
+$$\begin{aligned}
+\mathcal{L}_{\mathrm{total}}
+&=
+\mathcal{L}_{\mathrm{AVE}}
++
+\alpha \times \mathcal{L}_{\mathrm{GLDA}}\\
+&=
+\sum_{v\in\mathcal{V}^{+}}
+\bigl(
+\mathcal{L}_{\mathrm{rec}}^{v}
++
+f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v}
+\bigr)
++
+\alpha \times \mathcal{L}_{\mathrm{GLDA}}
+\end{aligned}$$
 
-where the first term is the reconstruction error, the second is the adaptive KL-sparsity term, and the third is the contrastive alignment term.
+where α is the constraint ratio coefficient that governs the balance between the AVE loss and the GLDA loss.
 
-## 5. 🧩 Method Overview: Three Core Modules
+## 5. 🧩 Method Overview
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
 
