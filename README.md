@@ -18,6 +18,19 @@
 The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (AVE) probes the sparsity ratio of each view as prior knowledge for view-aware representation learning and constraint modulation; Early-to-late Manifold Consistency Calibration (ELMC) leverages the stable global manifold preserved in early-fused features to reweight the late-stage fusion of adaptively encoded local features.
 </p>
 
+### 🧩 Method Overview: Three Core Modules
+
+**① AVE — Adaptive View-specific Encoding**
+Each view's sparsity ratio $s_v$ is probed from the input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint (adaptive coefficient C_spa in `ae_loss_function`, `loss.py`): sparser views receive stronger sparsity regularization, so that per-view encoders are tuned in a view-aware manner.
+
+**② ELMC — Early-to-late Manifold Consistency Calibration**
+The early-fused global manifold is used as a **structural anchor**. For each view, an N×N Gaussian-kernel Laplacian is built (bandwidth σ adaptively set to the global pairwise-distance median), and the consistency score $S_v = \mathrm{Tr}(L_v L_G)$ measures how well the view manifold aligns with the global one. After cross-view normalization, the weights $w_v = S_v / \sum_u S_u$ reweight the late-stage fusion, automatically down-weighting unreliable views. (`GlobalLocalManifoldCalibration.py`; the score form and σ setting are switchable for the ablation study)
+
+**③ GLDA — Global-local Distribution Alignment**
+A contrastive loss (τ=1) aligns the global fused representation **H** with each view's shared/common information, while reconstruction and cycle-consistency terms preserve view-specific fidelity; the aligned global representation is finally clustered by K-means into ACC/NMI/PUR/ARI. (`loss.py` + the consistency training stage of `train.py`)
+
+The whole pipeline is trained in **two stages**: AVE pretraining (reconstruction + sparsity) → consistency training (ELMC weighting + GLDA alignment).
+
 ### 🔗 Citation
 If our paper or code inspires you, please cite this paper when it is available😊:
 ```
