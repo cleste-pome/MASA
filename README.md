@@ -33,66 +33,14 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 </p>
 
 ### 📑 Table of Contents
-- [🧩 Method Overview: Three Core Modules](#-method-overview-three-core-modules)
 - [🔗 Citation](#-citation)
 - [📂 Source code list](#-source-code-list)
 - [1. 📊 Dataset](#1-dataset)
 - [2. ✅ Run](#2-run)
 - [3. 🧮 Main Code](#3-main-code)
 - [4. 🔬 Loss](#4-loss)
-- [7. 💻 User Guide](#7--user-guide-windows--linux--macos)
-
-### 🧩 Method Overview: Three Core Modules
-
-MASA is a robust multi-view clustering framework built on three core modules, trained in **two stages**: ① *AVE pretraining* (reconstruction + adaptive sparsity), followed by ② *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into **ACC / NMI / PUR / ARI**.
-
-#### ① AVE — Adaptive View-specific Encoding
-
-Cross-view structural heterogeneity is common in multi-view data, with **sparsity variation** as a typical manifestation. AVE makes each view's encoder aware of its own sparsity:
-
-1. **Sparsity probing**: for view $v$, the sparsity ratio is estimated per sample as the proportion of dimensions below a numerical threshold,
-   $$s_v = \frac{1}{N}\sum_{n=1}^{N}\frac{|\{d : |x_{n,d}^v| < \varepsilon_{norm}\}|}{D_v}, \quad \varepsilon_{norm} = 6.1\times10^{-5}\ \text{(FP16 smallest normal)}$$
-   (`zero_value_proportion` in `MASA.py`).
-2. **Adaptive sparse constraint**: the observed $s_v$ modulates the KL-sparsity strength via an adaptive coefficient,
-   $$C_{spa} = \begin{cases} 0, & s_v \le 0.01 \\ (s_v - 0.01)/(1 - 0.01), & s_v > 0.01 \end{cases} \in (0,1]$$
-   sparser views thus receive stronger sparse regularization (the *sparse-at* positions and the KL term are applied to the encoder activations).
-3. **View-aware loss**: each view (plus a global concatenated view) is reconstructed by its own autoencoder,
-   $$\mathcal{L}_{rec} = \|\mathbf{x}_v - \hat{\mathbf{x}}_v\|_F^2 + \beta \cdot KL(\rho \,\|\, \hat{\rho}_v), \quad \rho = 0.05,\ \beta = 1.0$$
-
-#### ② ELMC — Early-to-late Manifold Consistency Calibration
-
-View-quality imbalance is the broader fusion problem: low-quality views introduce unreliable structural relations. ELMC anchors on the **early-fused global manifold** and calibrates the late fusion with a five-step chain (`GlobalLocalManifoldCalibration.py`):
-
-| Step | Operation | Formula |
-|---|---|---|
-| 1 | Pairwise Euclidean distances of view / global features | $\Delta^v$, $\Delta^G$ |
-| 2 | Gaussian kernel with **adaptive bandwidth** (median heuristic, re-estimated every epoch) | $W_{ab} = \exp(-\Delta_{ab}^2 / 2\sigma^2),\quad \sigma = \mathrm{median}(\Delta^G_{a>b})$ |
-| 3 | Degree matrix and graph Laplacian | $L_v = D_v - W_v,\quad L_G = D_G - W_G$ |
-| 4 | **Consistency score** (manifold alignment with the global anchor) | $S_v = \mathrm{Tr}(L_v L_G)$ |
-| 5 | Cross-view normalization → late-fusion weights | $w_v = S_v / \sum_u S_u$ |
-
-The normalized weights reweight the late-stage fusion $H = f_{fusion}\big(\sum_v w_v \cdot z_v\big)$: views whose manifolds align with the global structure dominate, while unreliable views are automatically down-weighted. Both the score form ($S_v$) and the bandwidth setting ($\sigma$) are switchable for the ablation study (`SCORE_FORM` / `SIGMA_MODE` at the top of the file), and unsupported MPS ops (`torch.cdist`/`diag`) fall back to CPU automatically.
-
-<p align="center">
-  <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="70%">
-</p>
-
-<p align="center">
-Clustering accuracy (ACC) on MSRCV1 during training.
-</p>
-
-#### ③ GLDA — Global-local Distribution Alignment
-
-The final stage aligns the **global fused representation** with each view's **local shared information**:
-
-1. **Common-information projection**: each view's encoding $z_v$ is projected to a shared space, $r_v = \mathrm{Proj}(z_v)$.
-2. **Contrastive alignment**: a contrastive loss (temperature $\tau = 1$) pulls the global representation $H$ and each view's common information $r_v$ together,
-   $$\mathcal{L}_{con} = \sum_{v\in\mathcal{V}} \ell_{con}(H,\ r_v)$$
-   aligning the global and local distributions across views.
-3. **Overall objective** (consistency training stage):
-   $$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con}, \quad \alpha = 1$$
-   reconstruction and cycle-consistency terms preserve view-specific fidelity throughout (`loss.py` + `contrastive_train` in `train.py`).
-4. **Final clustering**: K-means (n_init=100) on the L2-normalized global representation $H$ yields ACC / NMI / PUR / ARI.
+- [5. 🧩 Method Overview](#5-method-overview-three-core-modules)
+- [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
 
 ### 🔗 Citation
 If our paper or code inspires you, please cite this paper when it is available😊:
@@ -180,7 +128,7 @@ parser.add_argument("--seed", type=int, default=50)
 parser.add_argument("--iter", type=int, default=1)
 ```
 
-### 3.3 Dataset Preprocessing (Robustness Perturbations)
+### 3.3 Dataset Preprocessing
 
 ```py
 # Select samples by noise ratio, then add Gaussian noise to (1..view-1) random views.
@@ -209,21 +157,52 @@ kl_sparse_loss(hidden_layer_activation, rho, sparse_beta)
 contrastiveloss(H, rs[v], w2[v])
 ```
 
-Additionally, the **ELMC** module computes per-view weights by Laplacian trace alignment
-`w_v = Tr(L_v · L_G) / Σ_u Tr(L_u · L_G)` with an adaptive bandwidth σ (default: global
-pairwise-distance median). The score form and σ setting can be switched at the top of
-`GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
-ablation tables in the paper.
+Additionally, the **ELMC** module computes per-view fusion weights by Laplacian trace
+alignment with an adaptive bandwidth σ (default: global pairwise-distance median). The
+score form and σ setting can be switched at the top of `GlobalLocalManifoldCalibration.py`
+(`SCORE_FORM` / `SIGMA_MODE`), corresponding to the ablation tables in the paper.
 
-## 7. 💻 User Guide (Windows / Linux / macOS)
+## 5. 🧩 Method Overview: Three Core Modules
 
-### Dependencies
+MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
+
+**① AVE — Adaptive View-specific Encoding** handles the cross-view sparsity heterogeneity typical of multi-view data: the sparsity ratio of each view is probed from its input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint — sparser views receive stronger sparse regularization, so that each view's encoder is tuned in a view-aware manner (adaptive coefficient C_spa in `ae_loss_function`, `loss.py`).
+
+**② ELMC — Early-to-late Manifold Consistency Calibration** performs the **fusion-weight calibration from early fusion to late fusion**: the early-fused global representation provides a stable structural anchor; for each view, a Gaussian-kernel graph Laplacian is built with an adaptive bandwidth (median heuristic, re-estimated every epoch), and a consistency score (Laplacian trace alignment) measures how well the view's manifold aligns with the global anchor; after cross-view normalization, the resulting weights reweight the late-stage fusion of the adaptively encoded view features, automatically down-weighting unreliable views (`GlobalLocalManifoldCalibration.py`; the score form and bandwidth setting are switchable for the ablation study, and unsupported MPS ops fall back to CPU automatically).
+
+<p align="center">
+  <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="70%">
+</p>
+
+<p align="center">
+Clustering accuracy (ACC) on MSRCV1 during training.
+</p>
+
+**③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: a contrastive loss (temperature τ = 1) pulls the global representation H and the per-view common information r_v together, while reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`). The overall objective of the consistency training stage is the **total loss**:
+
+$$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con}, \quad \alpha = 1$$
+
+where L_rec is the reconstruction error, L_sparse the adaptive KL-sparsity term, and L_con the contrastive alignment term. The L2-normalized global representation H is finally clustered by K-means (n_init=100) into ACC / NMI / PUR / ARI.
+
+## 6. 💻 User Guide (Windows / Linux / macOS)
+
+### ⚙️ Requirements
+
+| Library | Version (dev) | 用途（对应论文部分） |
+|---|---|---|
+| python | 3.12（3.10+ 均可） | 运行环境 |
+| pytorch | 2.x（按平台选 cu121 / cpu / MPS 官方 wheel） | 网络构建与两阶段训练（AVE 预训练 → 一致性训练） |
+| numpy | ≥ 1.21 | 数值计算（数据与指标处理） |
+| scipy | ≥ 1.10 | 读取 .mat 数据集（论文全部数据集） |
+| scikit-learn | ≥ 1.0 | K-means 聚类评估：ACC / NMI / PUR / ARI（论文全部实验指标） |
+| tqdm | ≥ 4.6 | 训练进度条 |
+| matplotlib | ≥ 3.5 | 训练曲线 / ELMC σ 变化 / t-SNE 可视化（论文收敛性分析图） |
+| tabulate | ≥ 0.9 | 分段计时报告 |
 
 ```shell
 pip install numpy scipy scikit-learn tqdm matplotlib tabulate
 ```
 
-- Python 3.10+ recommended (developed on 3.12).
 - PyTorch is installed separately per platform (see below); the GPU K-means alternatives (cuML/cuPy) are optional and **not** required by default.
 
 ### Install PyTorch per platform
