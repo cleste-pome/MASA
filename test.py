@@ -49,11 +49,11 @@ GLMC.SIGMA_PRINT_ENABLED = False  # 测试只评估一次，σ 变化观察无�
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 # TODO 1：模型权重路径 — 评估用的 .pth 文件，或权重目录（推荐目录）
-#   填 .pth 文件:  MODEL_PATH = "Weights/Out-Scene20250316-160558.pth"
+#   填 .pth 文件:  MODEL_PATH = "weights/Out-Scene20250316-160558.pth"
 #   填目录（自动按数据集匹配权重，目录下每份权重都会评估、各占一行）:
 #                 MODEL_PATH = "4.models"
 #   留空 "" 时运行中会在控制台提示你输入
-MODEL_PATH = "Weights"   # 字符串：权重路径（.pth 文件或目录）
+MODEL_PATH = "weights"   # 字符串：权重路径（.pth 文件或目录）
 
 # TODO 2：要评估的数据集 — 逗号分隔；留空 = datasets/ 下全部 .mat（推荐）
 #   例: DATASETS = "ALOI-100"
@@ -105,7 +105,7 @@ def resolve_weights(model_arg, dataset_name):
     """解析权重路径：文件→[该文件]；目录→按以下顺序匹配：
     1) {目录}/{数据集}/*.pth 子目录（按修改时间旧→新）
     2) {目录}/{数据集}.pth 精确单文件
-    3) {目录}/{数据集}*.pth 平铺文件（文件名以数据集名开头，如 Weights/Out-Scene20250316-160558.pth）
+    3) {目录}/{数据集}*.pth 平铺文件（文件名以数据集名开头，如 weights/Out-Scene20250316-160558.pth）
     找不到→[]"""
     if os.path.isfile(model_arg):
         return [model_arg]
