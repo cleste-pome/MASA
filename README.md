@@ -77,6 +77,7 @@ MASA
 - Each dataset is a single `.mat` file placed under `datasets/`, containing `X` (a cell array of view matrices) and `Y` (sample labels).
 - `train.py` automatically trains on every `.mat` file under `datasets/`.
 - Public multi-view datasets: https://github.com/wangsiwei2010/awesome-multi-view-clustering
+- If GitHub is slow or unreachable in your region, downloading via a mirror or proxy works as well.
 
 ## 2. ✅Run
 
@@ -208,6 +209,8 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 | Linux / Windows + NVIDIA GPU | `pip install torch --index-url https://download.pytorch.org/whl/cu121` | CUDA |
 | Linux / Windows (CPU only) | `pip install torch --index-url https://download.pytorch.org/whl/cpu` | CPU |
 | macOS (Apple Silicon) | `pip install torch` (official wheels include MPS support) | MPS |
+
+> **Tip**: official sources can be slow in some regions; domestic mirrors usually help, e.g. Tsinghua TUNA (`https://pypi.tuna.tsinghua.edu.cn/simple`) for general packages, or Aliyun PyTorch wheels (`https://mirrors.aliyun.com/pytorch-wheels/cu121`).（国内读者可把官方源换成清华/阿里云等镜像，安装会快很多。）
 
 ### Device selection (automatic, no configuration needed)
 
