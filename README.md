@@ -162,6 +162,12 @@ alignment with an adaptive bandwidth σ (default: global pairwise-distance media
 score form and σ setting can be switched at the top of `GlobalLocalManifoldCalibration.py`
 (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the ablation tables in the paper.
 
+The overall objective of the consistency training stage is the **total loss**:
+
+$$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con}, \quad \alpha = 1$$
+
+where L_rec is the reconstruction error (term 1), L_sparse the adaptive KL-sparsity term (term 2), and L_con the contrastive alignment term (term 3).
+
 ## 5. 🧩 Method Overview: Three Core Modules
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
@@ -178,11 +184,7 @@ MASA is a robust multi-view clustering framework built on three core modules and
 Clustering accuracy (ACC) on MSRCV1 during training.
 </p>
 
-**③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: a contrastive loss (temperature τ = 1) pulls the global representation H and the per-view common information r_v together, while reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`). The overall objective of the consistency training stage is the **total loss**:
-
-$$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con}, \quad \alpha = 1$$
-
-where L_rec is the reconstruction error, L_sparse the adaptive KL-sparsity term, and L_con the contrastive alignment term. The L2-normalized global representation H is finally clustered by K-means (n_init=100) into ACC / NMI / PUR / ARI.
+**③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: a contrastive loss (temperature τ = 1) pulls the global representation H and the per-view common information r_v together, while reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`). The L2-normalized global representation H is finally clustered by K-means (n_init=100) into ACC / NMI / PUR / ARI.
 
 ## 6. 💻 User Guide (Windows / Linux / macOS)
 
