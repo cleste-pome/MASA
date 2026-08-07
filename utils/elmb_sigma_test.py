@@ -98,7 +98,7 @@ def run_test(args, test_no):
     for cond_name, cond_fn in [('raw', lambda x: x), ('l2-norm', normed)]:
         for mode in modes:
             GLMC.SIGMA_MODE = mode
-            wA_list, fb = [], 0
+            wA_list, wB_list, wC_list, fb = [], [], [], 0
             for t in range(1, T + 1):
                 p = t / T
                 # 特征演化：全局特征从纯噪声逐步收敛到簇结构（模拟编码器学习）
@@ -109,36 +109,39 @@ def run_test(args, test_no):
                 w = manifold_alignment_weights(
                     [cond_fn(vA), cond_fn(vB), cond_fn(vC)], cond_fn(z_all)).detach()
                 wA_list.append(float(w[0]))
+                wB_list.append(float(w[1]))
+                wC_list.append(float(w[2]))
                 last_w[(cond_name, mode)] = w                         # 训练结束时的三视图权重
                 if bool(torch.allclose(w, torch.full_like(w, 1.0 / 3), atol=1e-4)):
                     fb += 1
-            results[(cond_name, mode)] = wA_list
+            results[(cond_name, mode)] = {'A': wA_list, 'B': wB_list, 'C': wC_list}
             fallback[(cond_name, mode)] = fb
     elapsed = time.perf_counter() - t_start
 
-    # ================= 画图 =================
+    # ================= 画图：每个（条件 × 模式）一幅，三条视图权重曲线 =================
     os.makedirs(args.fig_dir, exist_ok=True)
-    colors = {'median': '#4C72B0', 'fixed': '#D55E00', 'mean': '#8172B2',
-              'quantile': '#55A868', 'local': '#CCB974'}
+    view_colors = {'A': '#4C72B0', 'B': '#D55E00', 'C': '#55A868'}   # 对齐/打乱/噪声
     fig_paths = {}
     for cond_name in ['raw', 'l2-norm']:
-        plt.figure(figsize=(10, 6))
         for mode in modes:
-            plt.plot(range(1, T + 1), results[(cond_name, mode)], label=mode,
-                     color=colors.get(mode), linewidth=1.8)
-        plt.axhline(1.0 / 3, color='gray', linestyle='--', linewidth=1, label='uniform (1/3)')
-        plt.xlabel('Epoch (simulated training)', fontsize=12)
-        plt.ylabel('w_aligned (aligned view weight)', fontsize=12)
-        plt.title(f'ELMC SIGMA_MODE test #{test_no}: aligned-view weight over {T} epochs - {cond_name}',
-                  fontsize=13)
-        plt.legend(fontsize=10)
-        plt.grid(alpha=0.3)
-        plt.tight_layout()
-        path = os.path.join(args.fig_dir, f'test{test_no}_weights_epoch_{cond_name}.png')
-        plt.savefig(path, dpi=150)
-        plt.close()
-        fig_paths[cond_name] = path
-        print(f'图已保存: {path}')
+            d = results[(cond_name, mode)]
+            plt.figure(figsize=(10, 6))
+            plt.plot(range(1, T + 1), d['A'], label='aligned view', color=view_colors['A'], linewidth=1.8)
+            plt.plot(range(1, T + 1), d['B'], label='shuffled view', color=view_colors['B'], linewidth=1.8)
+            plt.plot(range(1, T + 1), d['C'], label='noisy view', color=view_colors['C'], linewidth=1.8)
+            plt.axhline(1.0 / 3, color='gray', linestyle='--', linewidth=1, label='uniform (1/3)')
+            plt.xlabel('Epoch (simulated training)', fontsize=12)
+            plt.ylabel('View weight', fontsize=12)
+            plt.title(f'ELMC SIGMA_MODE test #{test_no}: {cond_name} - {MODE_LABELS.get(mode, mode)} '
+                      f'view weights over {T} epochs', fontsize=13)
+            plt.legend(fontsize=10)
+            plt.grid(alpha=0.3)
+            plt.tight_layout()
+            path = os.path.join(args.fig_dir, f'test{test_no}_weights_{cond_name}_{mode}.png')
+            plt.savefig(path, dpi=150)
+            plt.close()
+            fig_paths[(cond_name, mode)] = path
+            print(f'图已保存: {path}')
 
     # ================= 控制台汇总 =================
     calls = len(modes) * T * 2
@@ -155,7 +158,7 @@ def run_test(args, test_no):
     print(f"{'条件':<9}{'模式':<9}{'wA@epoch1':>10}{f'wA@epoch{T}':>12}{'权重≈均匀epoch数':>14}")
     for cond_name in ['raw', 'l2-norm']:
         for mode in modes:
-            w1, w100 = results[(cond_name, mode)][0], results[(cond_name, mode)][-1]
+            w1, w100 = results[(cond_name, mode)]['A'][0], results[(cond_name, mode)]['A'][-1]
             print(f"{cond_name:<9}{mode:<9}{w1:>10.3f}{w100:>12.3f}{fallback[(cond_name, mode)]:>14}")
 
     # ================= 可选：写入 md 记录 =================
@@ -206,12 +209,13 @@ def write_md(args, test_no, results, last_w, fallback, elapsed, calls, fig_paths
     ]
     for cond_name in ['raw', 'l2-norm']:
         for mode in [m.strip() for m in args.modes.split(',') if m.strip()]:
-            w1, w100 = results[(cond_name, mode)][0], results[(cond_name, mode)][-1]
+            w1, w100 = results[(cond_name, mode)]['A'][0], results[(cond_name, mode)]['A'][-1]
             lines.append(f'| {cond_name} | {mode} | {w1:.3f} | {w100:.3f} | {fallback[(cond_name, mode)]} |')
     lines += [
         '',
         f'**耗时**：{elapsed:.1f} s（{calls} 次调用，n={args.samples}，CPU）',
-        f'**曲线图**：`{args.fig_dir}/` 下 test{test_no}_weights_epoch_raw.png 与 test{test_no}_weights_epoch_l2-norm.png',
+        f'**曲线图**：`{args.fig_dir}/` 下共 {len(modes) * 2} 幅（每幅含对齐/打乱/噪声三条视图权重曲线）：'
+        f'test{test_no}_weights_{{raw,l2-norm}}_{{mode}}.png',
         '',
         '**结论**：（待补充）',
         '',
