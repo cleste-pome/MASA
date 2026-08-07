@@ -25,7 +25,7 @@ Welcome to the official implementation of **MASA** — a robust multi-view clust
 </p></details>
 
 <p align="center">
-  <img src="framework.png" alt="MASA framework" width="100%">
+  <img src="docs/framework.png" alt="MASA framework" width="100%">
 </p>
 
 <p align="center">
@@ -33,7 +33,7 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 </p>
 
 <p align="center">
-  <img src="MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="70%">
+  <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="70%">
 </p>
 
 <p align="center">
