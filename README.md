@@ -271,4 +271,4 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 
 ## 7. 🙏 Acknowledgments
 
-Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [MFLVC](https://github.com/SubmissionsIn/MFLVC) and [DealMVC](https://github.com/xihongyang1999/DealMVC). We would like to thank the authors for their valuable contributions to the multi-view clustering community.
+Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [DealMVC](https://github.com/xihongyang1999/DealMVC) and [GCFAgg](https://github.com/Galaxy922/GCFAggMVC). We would like to thank the authors for their valuable contributions to the multi-view clustering community.
