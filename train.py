@@ -379,10 +379,10 @@ if __name__ == '__main__':
                 # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好设置为1
                 if data_size >= 2500:  # large
                     args.con_epochs = 600  # small/large 300/600
-                    pre_check_num = 10
-                    valid_check_num = 1
-                else:  # small
                     pre_check_num = 100
+                    valid_check_num = 10
+                else:  # small
+                    pre_check_num = 10
                     valid_check_num = 10
 
                 with measure(f"{Dataname}: 预训练"):
