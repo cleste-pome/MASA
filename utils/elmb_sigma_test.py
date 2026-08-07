@@ -214,7 +214,7 @@ def write_md(args, test_no, results, last_w, fallback, elapsed, calls, fig_paths
     lines += [
         '',
         f'**耗时**：{elapsed:.1f} s（{calls} 次调用，n={args.samples}，CPU）',
-        f'**曲线图**：`{args.fig_dir}/` 下共 {len(modes) * 2} 幅（每幅含对齐/打乱/噪声三条视图权重曲线）：'
+        f'**曲线图**：`{args.fig_dir}/` 下共 {len([m for m in args.modes.split(",") if m.strip()]) * 2} 幅（每幅含对齐/打乱/噪声三条视图权重曲线）：'
         f'test{test_no}_weights_{{raw,l2-norm}}_{{mode}}.png',
         '',
         '**结论**：（待补充）',
