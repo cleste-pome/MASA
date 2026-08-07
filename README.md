@@ -26,6 +26,7 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 - [2. ✅ Run](#2-run)
 - [3. 🧮 Main Code](#3-main-code)
 - [4. 🔬 Loss](#4-loss)
+- [7. 💻 User Guide](#7--user-guide-windows--linux--macos)
 
 ### 🧩 Method Overview: Three Core Modules
 
@@ -160,3 +161,49 @@ Additionally, the **ELMC** module computes per-view weights by Laplacian trace a
 pairwise-distance median). The score form and σ setting can be switched at the top of
 `GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
 ablation tables in the paper.
+
+## 7. 💻 User Guide (Windows / Linux / macOS)
+
+### Dependencies
+
+```shell
+pip install numpy scipy scikit-learn tqdm matplotlib tabulate
+```
+
+- Python 3.10+ recommended (developed on 3.12).
+- PyTorch is installed separately per platform (see below); the GPU K-means alternatives (cuML/cuPy) are optional and **not** required by default.
+
+### Install PyTorch per platform
+
+| Platform | Install command | Default device |
+|---|---|---|
+| Linux / Windows + NVIDIA GPU | `pip install torch --index-url https://download.pytorch.org/whl/cu121` | CUDA |
+| Linux / Windows (CPU only) | `pip install torch --index-url https://download.pytorch.org/whl/cpu` | CPU |
+| macOS Apple Silicon | `pip install torch` (official wheels include MPS support) | MPS |
+| macOS Intel | `pip install torch` | CPU |
+
+### Device selection (automatic, no configuration needed)
+
+- Decision rule: **CUDA > MPS > CPU**（`utils/device_check.py`，训练启动时自动探测）。
+- Force a device with the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` (unavailable or invalid values fall back to automatic):
+
+```shell
+MASA_DEVICE=cuda python train.py    # force CUDA (Linux / Windows)
+MASA_DEVICE=mps  python train.py    # force MPS (macOS)
+MASA_DEVICE=cpu  python train.py    # force CPU
+```
+
+- Standalone probe (prints the environment summary only, no training): `python utils/device_check.py`
+
+### Platform notes
+
+- **macOS**: MPS requires macOS ≥ 12.3 and an official PyTorch build; unsupported ops under MPS (`torch.cdist` / `torch.diag` in the ELMC module) automatically fall back to CPU — nothing to configure.
+- **Linux / Windows without CUDA**: falls back to CPU automatically. `OMP_NUM_THREADS=1` is preset in `train.py` to avoid thread oversubscription on CPU.
+- **CUDA**: to choose a specific GPU, set `CUDA_VISIBLE_DEVICES` (train.py presets `"0"`); multi-GPU is not required.
+
+### Run
+
+```shell
+python train.py                                          # train on all .mat datasets under datasets/
+python test.py --model 4.models --datasets MSRCV1        # evaluate a trained model
+```
