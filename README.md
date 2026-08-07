@@ -191,15 +191,15 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 
 ### ⚙️ Requirements
 
-| Library | Version | 用途（对应论文部分） |
-|---|---|---|
-| python | 3.9.25（论文实验环境） | 运行环境 |
-| pytorch | 2.7.1+cu128（论文实验环境） | 网络构建与两阶段训练（AVE 预训练 → 一致性训练） |
-| numpy | 2.5.1 | 数值计算（数据与指标处理） |
-| scipy | 1.18.0 | 读取 .mat 数据集（论文全部数据集） |
-| scikit-learn | 1.7.2 | K-means 聚类评估：ACC / NMI / PUR / ARI（论文全部实验指标） |
+| Library | Version | 推荐 | 用途（对应论文部分） |
+|---|---|---|---|
+| python | 3.9.25 | 3.9–3.12 | 运行环境 |
+| pytorch | 2.7.1+cu128 | 2.7+（按平台选 cu121 / cpu / MPS 官方 wheel） | 网络构建与两阶段训练（AVE 预训练 → 一致性训练） |
+| numpy | 2.5.1 | ≥ 1.21 | 数值计算（数据与指标处理） |
+| scipy | 1.18.0 | ≥ 1.10 | 读取 .mat 数据集（论文全部数据集） |
+| scikit-learn | 1.7.2 | ≥ 1.0 | K-means 聚类评估：ACC / NMI / PUR / ARI（论文全部实验指标） |
 
-> 版本依据：前两行来自论文 Implementation Details（Python 3.9.25 + PyTorch 2.7.1+cu128）；其余为代码实际运行版本。推荐按论文实验版本配置，或使用兼容的较新稳定版。
+> 版本号规则：论文 Implementation Details 明确的直接采用（python、pytorch）；其余为代码实际运行版本。
 
 ```shell
 pip install numpy scipy scikit-learn
