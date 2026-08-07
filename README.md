@@ -1,33 +1,28 @@
-# MASA
-## **Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration** 🚀
+<div align="center">
 
-<p align="center">
-  <a href="https://github.com/cleste-pome">Ruimeng Liu</a><sup>1,2</sup>,
-  <a href="https://github.com/changtang">Chang Tang</a><sup>2</sup>,
-  <a href="">Bo Wang</a><sup>3</sup>,
-  <a href="https://github.com/guanyuezhen">Zhenglai Li</a><sup>4</sup>,
-  <a href="">Lianbo Guo</a><sup>2,5</sup>,
-  <a href="https://github.com/xinwangliu">Xinwang Liu</a><sup>6</sup>
-</p>
+<h2>Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration</h2>
 
-<p align="center">
-<sup>1</sup>School of Computer Science and Technology, Huazhong University of Science and Technology<br>
-<sup>2</sup>School of Software Engineering, Huazhong University of Science and Technology<br>
-<sup>3</sup>Institute of Medical Equipment Science and Engineering, Huazhong University of Science and Technology<br>
-<sup>4</sup>Shenzhen Institutes of Advanced Technology, Chinese Academy of Sciences<br>
-<sup>5</sup>Wuhan National Laboratory for Optoelectronics<br>
-<sup>6</sup>School of Computer, National University of Defense Technology
-</p>
+[Ruimeng Liu](https://github.com/cleste-pome)<sup>1</sup>, [Chang Tang](https://github.com/changtang)<sup>1</sup>, [Bo Wang]()<sup>1</sup>, [Zhenglai Li](https://github.com/guanyuezhen)<sup>2</sup>, [Lianbo Guo]()<sup>1</sup>, [Xinwang Liu](https://github.com/xinwangliu)<sup>3</sup>
+
+<sup>1</sup>[Huazhong University of Science and Technology](https://www.hust.edu.cn/), <sup>2</sup>[Shenzhen Institutes of Advanced Technology, Chinese Academy of Sciences](https://www.siat.ac.cn/), <sup>3</sup>[National University of Defense Technology](https://www.nudt.edu.cn/)
+
+</div>
+
+***
 
 Welcome to the official implementation of **MASA** — a robust multi-view clustering framework that handles cross-view sparsity heterogeneity via adaptive sparse encoding (AVE), and calibrates view-quality imbalance in late fusion through early-to-late manifold consistency (ELMC).
 
-📣 I also have other multi-view clustering projects that may interest you ✨.
+<details open><summary>📣 I also have other multi-view clustering projects that may interest you ✨.</summary><p>
 
-**SparseMVC: Probing Cross-view Sparsity Variations for Multi-view Clustering** [NeurIPS 2025 ✨Spotlight]
-- github: https://github.com/cleste-pome/SparseMVC
+> [**SparseMVC: Probing Cross-view Sparsity Variations for Multi-view Clustering**](https://openreview.net/pdf?id=cvJvk6oYfC)<br>
+> Ruimeng Liu, Xin Zou, Chang Tang, Xiao Zheng, Xingchen Hu, Kun Sun, Xinwang Liu<br>
+> [![Conference](http://img.shields.io/badge/NeurIPS-2025(Spotlight)-f9f107.svg)](https://neurips.cc/virtual/2025/loc/san-diego/poster/117045) [![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/cleste-pome/SparseMVC)
 
-**Learning Disentangled Representations for Generalized Multi-view Clustering** [TPAMI 2026]
-- github: https://github.com/cleste-pome/GMAE
+> [**Learning Disentangled Representations for Generalized Multi-view Clustering**](https://doi.org/10.1109/TPAMI.2026.3687339)<br>
+> Xin Zou, Ruimeng Liu, Chang Tang, Zhenglai Li, Xinwang Liu, Kunlun He, Wanqing Li<br>
+> [![Journal](http://img.shields.io/badge/TPAMI-2026-Bf107.svg)](https://doi.org/10.1109/TPAMI.2026.3687339) [![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/cleste-pome/GMAE)
+
+</p></details>
 
 <p align="center">
   <img src="framework.png" alt="MASA framework" width="100%">
