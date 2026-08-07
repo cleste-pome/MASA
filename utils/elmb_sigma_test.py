@@ -29,6 +29,8 @@ import os
 import sys
 import time
 
+import numpy as np
+
 # 保证从任意目录运行都能导入仓库模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -118,30 +120,61 @@ def run_test(args, test_no):
             fallback[(cond_name, mode)] = fb
     elapsed = time.perf_counter() - t_start
 
-    # ================= 画图：每个（条件 × 模式）一幅，三条视图权重曲线 =================
+    # ================= 画图：每个条件一幅 3×3 九宫格图 =================
+    # 9 格布局：1-5 各模式三视图曲线；6-8 三种视图跨模式对比；9 最终权重柱状图
     os.makedirs(args.fig_dir, exist_ok=True)
     view_colors = {'A': '#4C72B0', 'B': '#D55E00', 'C': '#55A868'}   # 对齐/打乱/噪声
+    view_names = {'A': 'aligned', 'B': 'shuffled', 'C': 'noisy'}
     fig_paths = {}
     for cond_name in ['raw', 'l2-norm']:
+        fig, axes = plt.subplots(3, 3, figsize=(18, 14))
+        cell = 0
+        # 格 1-5：每种模式的三视图权重曲线
         for mode in modes:
+            ax = axes[cell // 3][cell % 3]
+            cell += 1
             d = results[(cond_name, mode)]
-            plt.figure(figsize=(10, 6))
-            plt.plot(range(1, T + 1), d['A'], label='aligned view', color=view_colors['A'], linewidth=1.8)
-            plt.plot(range(1, T + 1), d['B'], label='shuffled view', color=view_colors['B'], linewidth=1.8)
-            plt.plot(range(1, T + 1), d['C'], label='noisy view', color=view_colors['C'], linewidth=1.8)
-            plt.axhline(1.0 / 3, color='gray', linestyle='--', linewidth=1, label='uniform (1/3)')
-            plt.xlabel('Epoch (simulated training)', fontsize=12)
-            plt.ylabel('View weight', fontsize=12)
-            plt.title(f'ELMC SIGMA_MODE test #{test_no}: {cond_name} - {MODE_LABELS.get(mode, mode)} '
-                      f'view weights over {T} epochs', fontsize=13)
-            plt.legend(fontsize=10)
-            plt.grid(alpha=0.3)
-            plt.tight_layout()
-            path = os.path.join(args.fig_dir, f'test{test_no}_weights_{cond_name}_{mode}.png')
-            plt.savefig(path, dpi=150)
-            plt.close()
-            fig_paths[(cond_name, mode)] = path
-            print(f'图已保存: {path}')
+            for k in 'ABC':
+                ax.plot(range(1, T + 1), d[k], label=view_names[k],
+                        color=view_colors[k], linewidth=1.5)
+            ax.axhline(1.0 / 3, color='gray', linestyle='--', linewidth=0.8)
+            ax.set_title(MODE_LABELS.get(mode, mode), fontsize=12)
+            ax.set_xlabel('Epoch', fontsize=9)
+            ax.set_ylabel('Weight', fontsize=9)
+            ax.grid(alpha=0.3)
+        # 格 6-8：对齐/打乱/噪声视图权重跨模式对比
+        for k in 'ABC':
+            ax = axes[cell // 3][cell % 3]
+            cell += 1
+            for mode in modes:
+                ax.plot(range(1, T + 1), results[(cond_name, mode)][k],
+                        label=MODE_LABELS.get(mode, mode), linewidth=1.5)
+            ax.axhline(1.0 / 3, color='gray', linestyle='--', linewidth=0.8)
+            ax.set_title(f'{view_names[k]} view weight (all modes)', fontsize=12)
+            ax.set_xlabel('Epoch', fontsize=9)
+            ax.set_ylabel('Weight', fontsize=9)
+            ax.grid(alpha=0.3)
+        # 格 9：训练结束时三视图最终权重柱状图
+        ax = axes[cell // 3][cell % 3]
+        x = np.arange(len(modes))
+        width = 0.25
+        for j, k in enumerate('ABC'):
+            vals = [float(last_w[(cond_name, m)][ord(k) - 65]) for m in modes]
+            ax.bar(x + (j - 1) * width, vals, width, label=view_names[k], color=view_colors[k])
+        ax.axhline(1.0 / 3, color='gray', linestyle='--', linewidth=0.8)
+        ax.set_title(f'final weights (epoch {T})', fontsize=12)
+        ax.set_xticks(x)
+        ax.set_xticklabels([MODE_LABELS.get(m, m) for m in modes], rotation=30, fontsize=9)
+        ax.legend(fontsize=8)
+        ax.grid(alpha=0.3)
+        fig.suptitle(f'ELMC SIGMA_MODE test #{test_no} - {cond_name} features '
+                     f'(n={n}, T={T}): view-weight curves, 3×3 grid', fontsize=15)
+        fig.tight_layout(rect=(0, 0, 1, 0.97))
+        path = os.path.join(args.fig_dir, f'test{test_no}_grid_{cond_name}.png')
+        plt.savefig(path, dpi=150)
+        plt.close()
+        fig_paths[cond_name] = path
+        print(f'图已保存: {path}')
 
     # ================= 控制台汇总 =================
     calls = len(modes) * T * 2
@@ -214,8 +247,8 @@ def write_md(args, test_no, results, last_w, fallback, elapsed, calls, fig_paths
     lines += [
         '',
         f'**耗时**：{elapsed:.1f} s（{calls} 次调用，n={args.samples}，CPU）',
-        f'**曲线图**：`{args.fig_dir}/` 下共 {len([m for m in args.modes.split(",") if m.strip()]) * 2} 幅（每幅含对齐/打乱/噪声三条视图权重曲线）：'
-        f'test{test_no}_weights_{{raw,l2-norm}}_{{mode}}.png',
+        f'**曲线图**：`{args.fig_dir}/` 下共 2 幅 3×3 九宫格图（每幅 = 一个特征条件，含 5 模式三视图曲线 + '
+        f'跨模式对比 + 最终权重柱状图）：test{test_no}_grid_raw.png 与 test{test_no}_grid_l2-norm.png',
         '',
         '**结论**：（待补充）',
         '',
