@@ -196,7 +196,9 @@ MASA is a robust multi-view clustering framework built on three core modules and
 Clustering accuracy (ACC) on MSRCV1 during training.
 </p>
 
-**③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: both the fused representation and the per-view common information are L2-normalized before computing pairwise similarities, and a contrastive loss (temperature 1) pulls them together — the normalization keeps the temperature meaningful regardless of feature scales; reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`). The global representation is finally clustered by K-means (n_init=100) into ACC / NMI / PUR / ARI.
+**③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: both the fused representation and the per-view common information are L2-normalized before computing pairwise similarities, and a contrastive loss (temperature 1) pulls them together — the normalization keeps the temperature meaningful regardless of feature scales; reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`).
+
+**Evaluation metrics.** The quality of the learned representation is measured by four standard clustering metrics: **ACC** (Accuracy) — the proportion of samples correctly matched to the ground-truth labels after optimal label alignment; **NMI** (Normalized Mutual Information) — the normalized mutual information between the clustering and the ground-truth partition; **PUR** (Purity) — the proportion of samples assigned to their dominant class; and **ARI** (Adjusted Rand Index) — the similarity between two clusterings corrected for chance. They are computed on the K-means clustering (n_init=100) of the final global representation, with higher values indicating better clustering quality.
 
 ---
 
