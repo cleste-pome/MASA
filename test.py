@@ -40,7 +40,7 @@ from MASA import Network                      # 网络结构定义（论文 AVE+
 from metric import valid                      # 聚类评估（ACC/NMI/PUR/ARI）
 from utils.device_check import detect_device  # 设备自动选择（CUDA > MPS > CPU）
 from utils.dataloader import MATKind          # 数据集加载（.mat 多视图格式）
-import GlobalLocalManifoldCalibration as GLMC  # 用于关闭 σ 周期打印（见下行）
+from utils import GlobalLocalManifoldCalibration as GLMC  # 用于关闭 σ 周期打印（见下行）
 GLMC.SIGMA_PRINT_ENABLED = False  # 测试只评估一次，σ 变化观察无意义，关掉
 
 

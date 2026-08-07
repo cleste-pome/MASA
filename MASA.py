@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn.functional import normalize
 
 # ===================== 项目内部模块 =====================
-from GlobalLocalManifoldCalibration import manifold_alignment_weights
+from utils.GlobalLocalManifoldCalibration import manifold_alignment_weights
 
 
 def zero_value_proportion(xs):

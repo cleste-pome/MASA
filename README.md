@@ -82,7 +82,6 @@ MASA
 ├── train.py                          # Training entry (two-stage: AVE pretrain → consistency training)
 ├── test.py                           # Evaluation (load .pth + dataset → forward → K-means)
 ├── MASA.py                           # Model definition (Network: Encoder/Decoder, projection head, cycle consistency, weighted fusion)
-├── GlobalLocalManifoldCalibration.py # ELMC core (Laplacian trace-alignment view weights, adaptive σ, switchable ablation configs)
 ├── loss.py                           # Loss functions (contrastive + reconstruction/KL sparsity)
 ├── metric.py                         # Metrics (ACC/NMI/PUR/ARI, K-means evaluation)
 ├── main.tex                          # LaTeX source
@@ -90,6 +89,7 @@ MASA
 └── utils                             # Utilities
     ├── dataloader.py                 # Data loading & preprocessing (min-max norm + noise/conflict/missing/sparsity injection)
     ├── device_check.py               # Device probing (CUDA > MPS > CPU, MASA_DEVICE override)
+    ├── GlobalLocalManifoldCalibration.py # ELMC core (Laplacian trace-alignment view weights, adaptive σ, switchable ablation configs)
     ├── Logger.py                     # Logging
     ├── metric2csv.py                 # Metric CSV export
     ├── plot.py                       # Training curves & ELMC σ curve
@@ -163,7 +163,7 @@ contrastiveloss(H, rs[v], w2[v])
 Additionally, the **ELMC** module computes per-view fusion weights by Laplacian trace
 alignment with an adaptive bandwidth (default: the global pairwise-distance median). The
 score form and bandwidth setting can be switched at the top of
-`GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
+`utils/GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
 ablation tables.
 
 The overall optimization objective is composed of the AVE loss and the GLDA loss; ELMC introduces no extra loss term, but connects them by calibrating the late fusion. The **total loss** is:
@@ -186,7 +186,7 @@ MASA is a robust multi-view clustering framework built on three core modules and
 
 **① AVE — Adaptive View-specific Encoding** handles the cross-view sparsity heterogeneity typical of multi-view data: the sparsity ratio of each view is probed from its input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint — sparser views receive stronger sparse regularization, so that each view's encoder is tuned in a view-aware manner (adaptive sparse coefficient in `ae_loss_function`, `loss.py`).
 
-**② ELMC — Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, with an adaptive bandwidth (median heuristic, re-estimated every epoch), is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
+**② ELMC — Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, with an adaptive bandwidth (median heuristic, re-estimated every epoch), is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`utils/GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
 
 <p align="center">
   <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="70%">
