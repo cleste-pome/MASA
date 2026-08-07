@@ -25,3 +25,4 @@ venv/
 
 # ===================== 本地测试记录（不上传 GitHub） =====================
 docs/elmb_sigma_tests.md
+docs/elmb_sigma_test_figs/
