@@ -43,6 +43,8 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
 - [🙏 Acknowledgments](#-acknowledgments)
 
+---
+
 ### 🔗 Citation
 If this work or the code is helpful to you, please cite it when it is available😊:
 ```
@@ -52,6 +54,8 @@ If this work or the code is helpful to you, please cite it when it is available�
   year={2026}
 }
 ```
+
+---
 
 ### 📂 Source code list:
 
@@ -74,11 +78,15 @@ MASA
     └── tsne_visual.py                # t-SNE visualization (pdf+svg)
 ```
 
+---
+
 ## 1. 📊Dataset
 - Each dataset is a single `.mat` file placed under `datasets/`, containing `X` (a cell array of view matrices) and `Y` (sample labels).
 - `train.py` automatically trains on every `.mat` file under `datasets/`.
 - Public multi-view datasets: https://github.com/wangsiwei2010/awesome-multi-view-clustering
-- 国内读者提示：GitHub 访问慢或不可达时可用镜像加速——文件下载把 `https://ghproxy.com/`（或 `https://mirror.ghproxy.com/`）拼在 GitHub 链接前即可，`git clone` 可用 `git clone https://gitclone.com/github.com/<owner>/<repo>`。
+- 国内读者提示：GitHub 访问慢或不可达时，下载数据集等文件可以在链接前加上 [gh-proxy](https://gh-proxy.com/) 加速，`git clone` 拉代码时也可以改用 [gitclone.com](https://gitclone.com/) 的镜像地址。
+
+---
 
 ## 2. ✅Run
 
@@ -98,6 +106,8 @@ python test.py --model 4.models --datasets ALOI-100
 ```
 
 Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
+
+---
 
 ## 🧮3. Main Code
 
@@ -144,6 +154,8 @@ parser.add_argument('--missing_ratio', type=float, default=0.0)
 parser.add_argument('--sparsity_ratio', type=float, default=0.0)
 ```
 
+---
+
 ## 4. 🔬Loss
 
 The overall objective integrates three terms:
@@ -186,6 +198,8 @@ f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v}
 
 where α is the constraint ratio coefficient that governs the balance between the AVE loss and the GLDA loss.
 
+---
+
 ## 5. 🧩 Method Overview
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
@@ -203,6 +217,8 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 </p>
 
 **③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: both the fused representation and the per-view common information are L2-normalized before computing pairwise similarities, and a contrastive loss (temperature 1) pulls them together — the normalization keeps the temperature meaningful regardless of feature scales; reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`). The global representation is finally clustered by K-means (n_init=100) into ACC / NMI / PUR / ARI.
+
+---
 
 ## 6. 💻 User Guide (Windows / Linux / macOS)
 
@@ -226,7 +242,7 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 | Linux / Windows (CPU only) | `pip install torch --index-url https://download.pytorch.org/whl/cpu` | CPU |
 | macOS (Apple Silicon) | `pip install torch` (official wheels include MPS support) | MPS |
 
-> **提示**：官方源在国内下载较慢，一般 Python 包可换清华 TUNA 镜像（`https://pypi.tuna.tsinghua.edu.cn/simple`），PyTorch 可换阿里云镜像（`https://mirrors.aliyun.com/pytorch-wheels/cu121`）。
+> **提示**：官方源在国内下载较慢，一般 Python 包可换用[清华 TUNA 镜像](https://pypi.tuna.tsinghua.edu.cn/simple)，PyTorch 可换用[阿里云镜像](https://mirrors.aliyun.com/pytorch-wheels/cu121)。
 
 ### Device selection (automatic, no configuration needed)
 
@@ -246,6 +262,8 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 - **macOS**: MPS requires macOS ≥ 12.3 and an official PyTorch build; unsupported ops under MPS (`torch.cdist` / `torch.diag` in the ELMC module) automatically fall back to CPU — nothing to configure.
 - **Linux / Windows without CUDA**: falls back to CPU automatically. `OMP_NUM_THREADS=1` is preset in `train.py` to avoid thread oversubscription on CPU.
 - **CUDA**: to choose a specific GPU, set `CUDA_VISIBLE_DEVICES` (train.py presets `"0"`); multi-GPU is not required.
+
+---
 
 ### 🙏 Acknowledgments
 
