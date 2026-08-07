@@ -5,21 +5,6 @@ import torch.nn.functional as F
 import numpy as np
 
 
-def von_mises_fisher_pdf(x, mu, kappa):
-    """
-    计算von Mises-Fisher分布的概率密度函数
-    :param x: 输入的单位向量 (batch_size, dim)
-    :param mu: 均值方向 (dim,)
-    :param kappa: von Mises-Fisher分布的浓度参数
-    :return: 该点的概率密度
-    """
-    norm = torch.norm(x, dim=-1, keepdim=True)
-    x = x / norm  # 归一化输入向量
-    mu = mu / torch.norm(mu)  # 归一化均值向量
-    kappa = torch.tensor(kappa, dtype=torch.float32) # 确保 kappa 是一个 Tensor
-    return torch.exp(kappa * torch.sum(x * mu, dim=-1)) / (2 * torch.pi * (1 - torch.exp(-2 * kappa)))
-
-
 class ContrastiveLoss(nn.Module):
     """
     通用对比损失类（Contrastive Loss）。
@@ -64,10 +49,6 @@ class ContrastiveLoss(nn.Module):
             return self.barlow_twins_loss(h_i, h_j, weight)
         elif self.loss_type == "triplet":
             return self.triplet_loss(h_i, h_j, weight)
-        elif self.loss_type == "easy":
-            return self.easy_loss(h_i, h_j, weight)
-        elif self.loss_type == "proco_von":
-            return self.proco_loss_von(h_i, h_j, weight)
         else:
             raise ValueError(f"未知的对比损失类型: {self.loss_type}")
 
@@ -150,57 +131,6 @@ class ContrastiveLoss(nn.Module):
         triplet_loss_fn = nn.TripletMarginLoss(margin=margin)
         loss = triplet_loss_fn(h_i, h_j, torch.roll(h_j, shifts=1, dims=0))  # 随机负样本
         return loss if weight is None else weight * loss
-
-    def easy_loss(self, h_i, h_j, weight=None):
-        """
-        TODO 5.0 简化但有效的对比损失函数（easy contrastive loss）
-         h_i 和 h_j 并不是正负样本，而是分别代表全局视图和局部视图的特征 (batch_size, dimension)
-        """
-        # 对h_i与h_j进行归一化处理，沿着第1维（特征维度）进行归一化
-        h_i = F.normalize(h_i, dim=1)
-        h_j = F.normalize(h_j, dim=1)
-        # 计算h_i和h_j之间的相似度矩阵：通过将h_i和h_j进行矩阵相乘，再除以温度因子（temperature）
-        similarity_matrix = torch.matmul(h_i, h_j.T) / self.temperature
-        # 提取相似度矩阵中的对角线元素作为正样本的相似度值
-        positives = torch.diag(similarity_matrix)
-        # 计算相似度矩阵中的中每个元素的指数形式相似度值
-        exp_sim = torch.exp(similarity_matrix)
-        # 计算每一行（即每个样本的所有相似度）的均值，作为负样本的分母
-        denominator = torch.mean(exp_sim, dim=1)
-        # 使用对比损失的公式来计算损失值：负对数（正样本的指数相似度值除以所有相似度值的平均值），加上一个小的常数防止除零
-        loss = -torch.log(torch.exp(positives) / (denominator + 1e-8))
-        # 返回损失的平均值，如果给定了权重（weight），则加权计算平均损失
-        return loss.mean() if weight is None else weight * loss.mean()
-
-    def proco_loss_von(self, h_i, h_j, weight=None):
-        """
-        TODO 5. 计算 ProCo（概率对比学习）损失
-        h_i: 第一模态的特征向量 (B, D)，即当前批次的全局视图特征表示
-        h_j: 第二模态的特征向量 (B, D)，即当前批次的局部视图特征表示
-        weight: 可选的权重，用于加权损失函数
-        kappa: von Mises-Fisher分布的浓度参数，控制分布的集中程度
-        """
-        temperature = 0.07
-        # 归一化输入特征
-        h_i_norm = F.normalize(h_i, p=2, dim=-1)
-        h_j_norm = F.normalize(h_j, p=2, dim=-1)
-
-        # 计算两个模态之间的相似度（点积）
-        positive_similarity = torch.sum(h_i_norm * h_j_norm, dim=-1)
-
-        # 使用von Mises-Fisher分布计算概率密度
-        p_ij = von_mises_fisher_pdf(h_i_norm, h_j_norm, kappa=20.0)
-        p_ji = von_mises_fisher_pdf(h_j_norm, h_i_norm, kappa=20.0)
-
-        # 计算对比损失（考虑温度和kappa）
-        loss = -torch.log(p_ij / (torch.exp(positive_similarity / temperature) + 1e-8))
-        loss += -torch.log(p_ji / (torch.exp(positive_similarity / temperature) + 1e-8))
-
-        # 如果有权重，使用加权损失
-        if weight is not None:
-            loss = loss * weight
-
-        return loss.mean()
 
 
 def kl_divergence(rho, rho_hat):

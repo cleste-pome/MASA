@@ -83,7 +83,6 @@ MASA
 ├── test.py                           # Evaluation (load .pth + dataset → forward → K-means)
 ├── MASA.py                           # Model definition (Network: Encoder/Decoder, projection head, cycle consistency, weighted fusion)
 ├── loss.py                           # Loss functions (contrastive + reconstruction/KL sparsity)
-├── metric.py                         # Metrics (ACC/NMI/PUR/ARI, K-means evaluation)
 ├── main.tex                          # LaTeX source
 ├── datasets                          # Dataset directory (.mat: X view-cell array + Y labels)
 └── utils                             # Utilities
@@ -91,6 +90,7 @@ MASA
     ├── device_check.py               # Device probing (CUDA > MPS > CPU, MASA_DEVICE override)
     ├── GlobalLocalManifoldCalibration.py # ELMC core (Laplacian trace-alignment view weights, adaptive σ, switchable ablation configs)
     ├── Logger.py                     # Logging
+    ├── metric.py                     # Metrics (ACC/NMI/PUR/ARI, K-means evaluation)
     ├── metric2csv.py                 # Metric CSV export
     ├── plot.py                       # Training curves & ELMC σ curve
     └── tsne_visual.py                # t-SNE visualization (pdf+svg)

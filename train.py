@@ -32,7 +32,7 @@ from tqdm import tqdm
 
 # ===================== 项目内部模块 =====================
 from loss import ContrastiveLoss, ae_loss_function
-from metric import valid
+from utils.metric import valid
 from MASA import Network
 from utils.GlobalLocalManifoldCalibration import reset_sigma_history, get_sigma_history
 from utils import Logger

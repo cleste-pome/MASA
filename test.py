@@ -37,7 +37,7 @@ import torch        # 深度学习框架
 
 from tabulate import tabulate                 # 汇总表格（与 metric.py 样式一致）
 from MASA import Network                      # 网络结构定义（论文 AVE+MASA）
-from metric import valid                      # 聚类评估（ACC/NMI/PUR/ARI）
+from utils.metric import valid                 # 聚类评估（ACC/NMI/PUR/ARI）
 from utils.device_check import detect_device  # 设备自动选择（CUDA > MPS > CPU）
 from utils.dataloader import MATKind          # 数据集加载（.mat 多视图格式）
 from utils import GlobalLocalManifoldCalibration as GLMC  # 用于关闭 σ 周期打印（见下行）

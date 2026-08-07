@@ -171,26 +171,7 @@ class Network(nn.Module):
             activation.append(hidden_activation)
             zs.append(z)  # 添加到编码特征列表
 
-        # TODO 0.0 平均权重：全1矩阵，平均加权
-        # batch_size = z_all.size(0)  # 获取批次大小（样本数量）
-        # Wz = np.ones((batch_size, self.view), dtype=np.float32)
-        # Wz = Wz / Wz.sum(axis=1, keepdims=True)  # 对每个样本的所有视图权重进行归一化，使得每个样本的权重和为1
-        # Wz = torch.from_numpy(Wz).to("cuda:0")  # TODO ndarray转tensor
-
-        # TODO 1.0 （注意力）样本权重：class AttentionMechanism
-        # attention_mechanism = AttentionMechanism(self.feature_dim)
-        # Wz = attention_mechanism.compute_attention_weights(z_all, zs)
-        # print(f'Wz:{Wz}')
-
-        # TODO 2.0 样本权重：class EdgeMechanism
-        # edge_sensitive = EdgeMechanism(self.feature_dim)
-        # Wz = edge_sensitive.compute_weights(z_all, zs) # TODO 可以在考虑Wz加上逐渐增大的比例函数平滑的增添影响
-        # Wz = torch.from_numpy(Wz).to("cuda:0")  # TODO ndarray转tensor
-
-        # TODO 3.0 样本权重：费舍尔信息（Fisher Information）定理
-        # Wz = compute_weights(z_all, zs)
-
-        # TODO 3.2 视图权重：基于局部保持性的流形相关权重 (Manifold Alignment Weighting)
+        # 视图权重：基于局部保持性的流形相关权重 (Manifold Alignment Weighting)
         Wz_view = manifold_alignment_weights(zs, z_all)  # sigma=None → 论文 Step 2 的全局距离中位数
         sample_num = z_all.shape[0]  # 把一个一维tensor复制num份变成二维tensor[num,tensor]
         Wz = Wz_view.repeat(sample_num, 1).to(self.device)
