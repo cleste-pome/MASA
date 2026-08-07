@@ -10,7 +10,7 @@
 
 ***
 
-Welcome to the official implementation of **MASA** — a robust multi-view clustering framework built on the idea of **calibrating the fusion weights from early fusion to late fusion**: the early-fused global manifold serves as a stable structural anchor, and the view weights of the late-stage fusion are calibrated against it via manifold consistency (ELMC), while cross-view sparsity heterogeneity is first handled by adaptive view-specific encoding (AVE).
+Welcome to the official implementation of **MASA** — a multi-view clustering framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), and calibrates the late-stage fusion weights against the early-fused global manifold through early-to-late manifold consistency (ELMC).
 
 <details open><summary>📣 I also have other multi-view clustering projects that may interest you ✨.</summary><p>
 
