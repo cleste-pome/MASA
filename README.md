@@ -34,12 +34,11 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 
 ### 📑 Table of Contents
 - [🔗 Citation](#-citation)
-- [📂 Source code list](#-source-code-list)
-- [1. 📊 Dataset](#1-dataset)
-- [2. ✅ Run](#2-run)
-- [3. 🧮 Main Code](#3-main-code)
-- [4. 🔬 Loss](#4-loss)
-- [5. 🧩 Method Overview](#5--method-overview)
+- [1. ✅ Run](#1--run)
+- [2. 🧮 Main Code](#2--main-code)
+- [3. 🔬 Loss](#3--loss)
+- [4. 🧩 Method Overview](#4--method-overview)
+- [5. 📊 Dataset](#5--dataset)
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
 - [7. 🙏 Acknowledgments](#7--acknowledgments)
 
@@ -56,6 +55,25 @@ If this work or the code is helpful to you, please cite it when it is available�
 ```
 
 ---
+
+## 1. ✅ Run
+
+(1) To run the **training** (two-stage: AVE pretraining → consistency training), use:
+
+```shell
+python train.py
+```
+
+- The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
+- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics), `4.models/` (.pth weights), `5.tsne/` (t-SNE), `7.ViewWeights/` (per-epoch ELMC view weights).
+
+(2) To run the **evaluation** with a trained model:
+
+```shell
+python test.py --model 4.models --datasets ALOI-100
+```
+
+Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
 
 ### 📂 Source code list:
 
@@ -80,42 +98,9 @@ MASA
 
 ---
 
-## 1. 📊Dataset
+## 2. 🧮 Main Code
 
-Multi-view clustering data describes the same set of samples from several complementary views — e.g. different feature extractors, image and text modalities, or gene expression profiles — where each view is one feature matrix. Good multi-view datasets provide views that are informative on their own and complementary to each other.
-
-In this repo, each dataset is a single `.mat` file placed under `datasets/`, containing:
-- `X`: a cell array of view matrices — `X{1}, X{2}, ...` are the feature matrices of views 1, 2, ..., each of shape `(num_samples, num_dimensions)`;
-- `Y`: a column vector of sample labels, of shape `(num_samples, 1)`.
-
-To use your own data, arrange the views into the cell array `X`, the labels into `Y`, save them into a `.mat` file (e.g. via `scipy.io.savemat`), and drop the file into `datasets/` — `train.py` picks it up automatically and trains on every `.mat` file in the folder. Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
-
----
-
-## 2. ✅Run
-
-(1) To run the **training** (two-stage: AVE pretraining → consistency training), use:
-
-```shell
-python train.py
-```
-
-- The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
-- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics), `4.models/` (.pth weights), `5.tsne/` (t-SNE), `7.ViewWeights/` (per-epoch ELMC view weights).
-
-(2) To run the **evaluation** with a trained model:
-
-```shell
-python test.py --model 4.models --datasets ALOI-100
-```
-
-Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
-
----
-
-## 🧮3. Main Code
-
-### 3.1 Configuration
+### 2.1 Configuration
 
 The dataset folder and output directories are handled automatically; the device is selected by `utils/device_check.py`.
 
@@ -126,7 +111,7 @@ folder_path = "datasets"
 # 1.logs/ 2.results_imgs/ 3.csv/ 4.models/ 5.tsne/ 7.ViewWeights/
 ```
 
-### 3.2 Hyperparameters
+### 2.2 Hyperparameters
 
 ```py
 # Number of epochs for the AVE pretraining stage
@@ -144,7 +129,7 @@ parser.add_argument("--seed", type=int, default=50)
 parser.add_argument("--iter", type=int, default=1)
 ```
 
-### 3.3 Dataset Preprocessing
+### 2.3 Dataset Preprocessing
 
 ```py
 # Select samples by noise ratio, then add Gaussian noise to (1..view-1) random views.
@@ -160,7 +145,7 @@ parser.add_argument('--sparsity_ratio', type=float, default=0.0)
 
 ---
 
-## 4. 🔬Loss
+## 3. 🔬 Loss
 
 The overall objective integrates three terms:
 
@@ -204,7 +189,7 @@ where α is the constraint ratio coefficient that governs the balance between th
 
 ---
 
-## 5. 🧩 Method Overview
+## 4. 🧩 Method Overview
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
 
@@ -221,6 +206,18 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 </p>
 
 **③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: both the fused representation and the per-view common information are L2-normalized before computing pairwise similarities, and a contrastive loss (temperature 1) pulls them together — the normalization keeps the temperature meaningful regardless of feature scales; reconstruction and cycle-consistency terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`). The global representation is finally clustered by K-means (n_init=100) into ACC / NMI / PUR / ARI.
+
+---
+
+## 5. 📊 Dataset
+
+Multi-view clustering data describes the same set of samples from several complementary views — e.g. different feature extractors, image and text modalities, or gene expression profiles — where each view is one feature matrix. Good multi-view datasets provide views that are informative on their own and complementary to each other.
+
+In this repo, each dataset is a single `.mat` file placed under `datasets/`, containing:
+- `X`: a cell array of view matrices — `X{1}, X{2}, ...` are the feature matrices of views 1, 2, ..., each of shape `(num_samples, num_dimensions)`;
+- `Y`: a column vector of sample labels, of shape `(num_samples, 1)`.
+
+To use your own data, arrange the views into the cell array `X`, the labels into `Y`, save them into a `.mat` file (e.g. via `scipy.io.savemat`), and drop the file into `datasets/` — `train.py` picks it up automatically and trains on every `.mat` file in the folder. Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
 
 ---
 
