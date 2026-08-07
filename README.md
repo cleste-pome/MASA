@@ -198,8 +198,7 @@ pip install numpy scipy scikit-learn tqdm matplotlib tabulate
 |---|---|---|
 | Linux / Windows + NVIDIA GPU | `pip install torch --index-url https://download.pytorch.org/whl/cu121` | CUDA |
 | Linux / Windows (CPU only) | `pip install torch --index-url https://download.pytorch.org/whl/cpu` | CPU |
-| macOS Apple Silicon | `pip install torch` (official wheels include MPS support) | MPS |
-| macOS Intel | `pip install torch` | CPU |
+| macOS (Apple Silicon) | `pip install torch` (official wheels include MPS support) | MPS |
 
 ### Device selection (automatic, no configuration needed)
 
