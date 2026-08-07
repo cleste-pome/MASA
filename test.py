@@ -55,10 +55,11 @@ GLMC.SIGMA_PRINT_ENABLED = False  # 测试只评估一次，σ 变化观察无�
 #   留空 "" 时运行中会在控制台提示你输入
 MODEL_PATH = f"4.models"           # 字符串：权重路径（.pth 文件或目录）
 
-# TODO 2：要评估的数据集 — 逗号分隔；留空 = datasets/ 下全部
-#   例: DATASETS = "MSRCV1"
-#   例: DATASETS = "MSRCV1,Out-Scene"
-DATASETS = f"ALOI-100,MSRCV1,Out-Scene,Synthetic3d"             # 字符串：数据集名列表（逗号分隔，留空 = 全部）
+# TODO 2：要评估的数据集 — 逗号分隔；留空 = datasets/ 下全部 .mat（推荐）
+#   例: DATASETS = "ALOI-100"
+#   例: DATASETS = "ALOI-100,MSRCV1"
+#   例: DATASETS = "datasets/MSRCV1.mat"   ← 直接传 .mat 路径也可以（自动去路径）
+DATASETS = ""                                 # 字符串：数据集名或 .mat 路径，逗号分隔（留空 = datasets/ 下全部）
 
 # TODO 3：网络维度 — 必须与训练时一致（否则权重加载会报错）
 #   ⚠ 训练默认值是 64 / 20；若训练时改过 --feature_dim / --high_feature_dim，这里要同步
@@ -77,9 +78,22 @@ SEED = 50                 # 整数：随机种子
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 def collect_datasets(names=None):
-    """收集要评估的数据集：names 为空时遍历 datasets/ 下全部 .mat"""
+    """收集要评估的数据集：names 为空时遍历 datasets/ 下全部 .mat。
+    条目兼容两种写法：纯数据集名（如 MSRCV1）或 .mat 文件路径
+    （如 datasets/MSRCV1.mat，自动去掉路径与扩展名）；不存在的数据集打印警告并跳过。"""
     if names:
-        return [n.strip() for n in names.split(",") if n.strip()]
+        out = []
+        for n in names.split(","):
+            n = n.strip()
+            if not n:
+                continue
+            if n.lower().endswith(".mat"):       # 兼容传 datasets/MSRCV1.mat 这类路径
+                n = os.path.basename(n)[:-4]
+            if os.path.isfile(os.path.join("datasets", n + ".mat")):
+                out.append(n)
+            else:
+                print(f"[跳过] datasets/{n}.mat 不存在")
+        return out
     return [f[:-4] for f in sorted(os.listdir("datasets")) if f.endswith(".mat")]
 
 
@@ -124,9 +138,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MASA 测试：加载权重并评估聚类性能')
     parser.add_argument('--model', type=str, default=None, help='权重路径：.pth 文件，或目录（自动按数据集匹配）')
     # --datasets：要评估的数据集（优先级：本参数 > 顶部 DATASETS > 全部）。填法：
-    #   例: --datasets MSRCV1                ← 只评一个数据集
+    #   例: --datasets ALOI-100              ← 只评一个数据集（纯名称）
+    #   例: --datasets datasets/MSRCV1.mat   ← 也可以直接传 .mat 路径
     #   例: --datasets MSRCV1,Out-Scene      ← 多个数据集用逗号分隔
-    parser.add_argument('--datasets', type=str, default='', help='要评估的数据集名称列表，逗号分隔（默认：全部 .mat）')
+    parser.add_argument('--datasets', type=str, default='', help='数据集名或 .mat 路径，逗号分隔（默认：datasets/ 下全部）')
     # --feature_dim / --high_feature_dim：网络维度（默认取顶部 TODO 3，须与训练时一致）
     #   例: --feature_dim 128 --high_feature_dim 32   ← 训练时若改过，这里要同步
     parser.add_argument('--feature_dim', type=int, default=FEATURE_DIM, help='编码器输出维度（须与训练时一致）')
