@@ -65,7 +65,7 @@ python train.py
 ```
 
 - The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
-- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics), `4.models/` (.pth weights), `5.tsne/` (t-SNE), `7.ViewWeights/` (per-epoch ELMC view weights).
+- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics), `4.models/` (.pth weights), `5.tsne/` (t-SNE), `6.ViewWeights/` (per-epoch ELMC view weights).
 
 (2) To run the **evaluation** with a trained model:
 
@@ -109,7 +109,7 @@ The dataset folder and output directories are handled automatically; the device 
 # Dataset folder path (all .mat files under it are trained in turn)
 folder_path = "datasets"
 # Output directories are created at runtime:
-# 1.logs/ 2.results_imgs/ 3.csv/ 4.models/ 5.tsne/ 7.ViewWeights/
+# 1.logs/ 2.results_imgs/ 3.csv/ 4.models/ 5.tsne/ 6.ViewWeights/
 ```
 
 ### 2.2 Hyperparameters
@@ -181,7 +181,7 @@ where α is the constraint ratio coefficient that governs the balance between th
 
 ## 4. 🧩 Method Overview
 
-Clustering, as the simplest and most intuitive self-supervised task, validates the effectiveness of an algorithm and its neural network by measuring the quality of the extracted and fused features.
+As the simplest and most intuitive self-supervised task, clustering offers a direct check on the quality of the extracted and fused features: the cleaner the clusters, the more discriminative the learned representation.
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
 

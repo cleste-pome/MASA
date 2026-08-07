@@ -8,7 +8,7 @@
   特征维度等）在 main() 的 argparse 定义处均有默认值，需要调整时改那里
   （或命令行传参，如 python train.py --pre_epochs 300）。
 【输出】1.logs/ 日志、2.results_imgs/ 曲线、3.csv/ 指标、4.models/ 权重、
-        5.tsne/ 可视化、7.ViewWeights/ 视图权重。
+        5.tsne/ 可视化、6.ViewWeights/ 视图权重。
 =====================================================================
 """
 
@@ -143,7 +143,7 @@ def print_timing_report(logger=None):
                 break
 
 
-def pretrain(Epoch, Dataset_name):
+def pretrain(Epoch, Dataset_name, current_time):
     tot_loss = 0.  # 初始化总损失
     loss_list = []  # 用于存储每个视角的损失
     # 遍历数据集，enumerate用于获取批次索引和数据
@@ -156,9 +156,9 @@ def pretrain(Epoch, Dataset_name):
             with measure(f"{Dataset_name}: t-SNE 可视化"):
                 embeddings = TSNE(n_components=2, init='pca', random_state=42).fit_transform(
                     xs2one.detach().cpu())  # TODO tensor
-                fig_svg = plot_svg_embeddings(embeddings, gnd, F'5.tsne/{Dataset_name}/', epoch,
+                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
                                               Dataset_name)  # TODO plot t-sne svg
-                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}/', epoch,
+                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
                                       Dataset_name)  # TODO plot t-sne pdf
                 print(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
         # 将每个视角的数据移动到指定设备上（例如，GPU），以便加速计算
@@ -168,7 +168,7 @@ def pretrain(Epoch, Dataset_name):
         optimizer.zero_grad()
         # 前向传播：通过模型计算重建后的输入、隐藏表示和其他中间结果
         xrs, zs, rs, H, xr_all, z_all, activation, means, wz_view = model(xs)
-        save_wz_view_to_csv(wz_view, Epoch + 1, f'7.ViewWeights/{Dataset_name}')
+        save_wz_view_to_csv(wz_view, Epoch + 1, f'6.ViewWeights/{Dataset_name}/{Dataset_name}_{current_time}')
         # 计算平均值
         mean_average = sum(means) / len(means)
         # TODO pre 1 全局视角
@@ -179,9 +179,9 @@ def pretrain(Epoch, Dataset_name):
             with measure(f"{Dataset_name}: t-SNE 可视化"):
                 embeddings = TSNE(n_components=2, init='pca', random_state=42).fit_transform(
                     z_all.detach().cpu())  # TODO 绘制前期融合编码后的全局矩阵
-                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}/', epoch,
+                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
                                               Dataset_name + f'_EarlyFusion')
-                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}/', epoch, Dataset_name + f'_EarlyFusion')
+                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch, Dataset_name + f'_EarlyFusion')
                 print(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
 
         # TODO pre 2 局部视角
@@ -212,7 +212,7 @@ def pretrain(Epoch, Dataset_name):
     return pretrain_loss
 
 
-def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD):
+def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time):
     """
     CVDA：基于对比的视图级分布对齐训练过程
     :param Epoch: 当前的训练轮次
@@ -224,7 +224,7 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD):
             xs[v] = xs[v].to(device)  # 将数据移动到指定设备（如GPU）
         optimizer.zero_grad()  # 清空梯度
         xrs, zs, rs, H, xr_all, z_all, activation, means, wz_view = model(xs)  # TODO 2.前向传播，获取重建后的输入、编码特征、视角一致特征和全局特征
-        save_wz_view_to_csv(wz_view, Epoch + 1, f'7.ViewWeights/{Dataset_name}')
+        save_wz_view_to_csv(wz_view, Epoch + 1, f'6.ViewWeights/{Dataset_name}/{Dataset_name}_{current_time}')
         # TODO C.3 视图权重, wz_view
         # TODO 降维可视化
         # if Epoch == Total_epochs - 1:
@@ -288,7 +288,7 @@ if __name__ == '__main__':
             parser.add_argument('--batch_size', default=256, type=int)
             parser.add_argument("--learning_rate", type=float, default=0.0003)
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
-            parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
+            parser.add_argument("--con_epochs", type=int, default=1000)  # 300/600
             parser.add_argument("--iter", type=int, default=1)
             parser.add_argument("--feature_dim", type=int, default=64)
             parser.add_argument("--high_feature_dim", type=int, default=20)
@@ -308,7 +308,9 @@ if __name__ == '__main__':
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
             data_ratio = f'{args.noise_ratio}_{args.conflict_ratio}_{args.missing_ratio}'
-            logger = Logger.get_logger(__file__, Dataname, data_ratio)
+            # 数据集级时间戳：本数据集所有输出（日志/曲线/指标/权重/可视化）命名统一
+            current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
+            logger = Logger.get_logger(__file__, Dataname, data_ratio, current_time)
             with measure(f"{Dataname}: 数据加载与预处理"):
                 dataset = MATKind(args.dataset, folder_path)
                 count_classes(Dataname, dataset.Y)  # TODO 统计类别数量分布情况（是否长尾分布）
@@ -351,8 +353,6 @@ if __name__ == '__main__':
             T = args.iter  # 循环测试次数，用于获取更准确地评价指标（平均值和方差）
             seed = args.seed
             lr = args.learning_rate
-            # 生成文件名，包含当前时间，以确保文件名唯一
-            current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
             imgs_path = f'2.results_imgs/{Dataname}_{current_time}'
             reset_sigma_history()  # σ 历史按数据集清零（曲线按数据集分开画，非 fixed 模式才有数据）
             for i in range(T):
@@ -363,6 +363,7 @@ if __name__ == '__main__':
                 lr_l.append(lr)
                 # 建保存评价指标的列表
                 acc_list, nmi_list, pur_list, ari_list, preloss_list, conloss_list = [], [], [], [], [], []
+                epoch_ticks = []  # 每个评价点对应的真实 epoch（pre 后接 con 续算，出图横坐标用）
                 # TODO 重点来了੭ ᐕ)੭: model
                 with measure(f"{Dataname}: 模型构建"):
                     model = Network(view, dims, args.feature_dim, args.high_feature_dim, device)
@@ -373,21 +374,21 @@ if __name__ == '__main__':
                     # contrastiveloss = ContrastiveLoss(args.batch_size, device).to(device)
                     # TODO 初始化损失函数（选择不同的对比损失վ'ᴗ' ի）
                     contrastiveloss = ContrastiveLoss(batch_size=args.batch_size, device=device, loss_type="classical")
-                    metric_csv_path, metric_csv_name = create_csv(Dataname, data_ratio, view)
+                    metric_csv_path, metric_csv_name = create_csv(Dataname, data_ratio, view, current_time)
                     print(f'Metrics csv file has been created: {metric_csv_path}')
 
                 # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好设置为1
                 if data_size >= 2500:  # large
-                    args.con_epochs = 600  # small/large 300/600
-                    pre_check_num = 100
-                    valid_check_num = 10
+                    args.con_epochs = 1000  # small/large 300/600
+                    pre_check_num = 10
+                    valid_check_num = 1
                 else:  # small
                     pre_check_num = 10
-                    valid_check_num = 10
+                    valid_check_num = 1
 
                 with measure(f"{Dataname}: 预训练"):
                     for epoch in tqdm(range(args.pre_epochs)):
-                        preloss = pretrain(epoch, Dataname)  # 1.pre-train
+                        preloss = pretrain(epoch, Dataname, current_time)  # 1.pre-train
                         preloss_list.append(preloss)
                         if (epoch + 1) % pre_check_num == 0:  # TODO pre_check_num 1. pre
                             with measure(f"{Dataname}: 验证评估(KMeans)"):
@@ -396,6 +397,7 @@ if __name__ == '__main__':
                                                                        con_train=False)
                             save_results_to_csv(zs_Results, epoch + 1, metric_csv_path, view)
                             # 将本轮pre_epochs评价指标添加到列表中
+                            epoch_ticks.append(epoch + 1)
                             acc_list.append(acc)
                             nmi_list.append(nmi)
                             pur_list.append(pur)
@@ -409,7 +411,7 @@ if __name__ == '__main__':
                         total_epochs = args.pre_epochs + args.con_epochs
                         if epoch + 1 == total_epochs:
                             plot_SDD = True
-                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD)  # 2.contrastive train
+                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)  # 2.contrastive train
                         conloss_list.append(conloss)
                         # TODO valid_check_num 2. con
                         if (epoch + 1) % valid_check_num == 0:  # TODO con
@@ -418,6 +420,7 @@ if __name__ == '__main__':
                                                                        class_num, pre_train=False,
                                                                        con_train=True)
                             save_results_to_csv(rs_Results, epoch + 1, metric_csv_path, view)
+                            epoch_ticks.append(epoch + 1)
                             acc_list.append(acc)
                             nmi_list.append(nmi)
                             pur_list.append(pur)
@@ -429,17 +432,16 @@ if __name__ == '__main__':
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
                 state = model.state_dict()
-                current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
                 pth_path_meta = f'{pth_path}/' + f'{Dataname}'
                 if not os.path.exists(pth_path_meta):
                     os.makedirs(pth_path_meta)
-                model_path = f'{pth_path_meta}/' + args.dataset + current_time + '.pth'
+                model_path = f'{pth_path_meta}/{Dataname}_{current_time}.pth'
                 torch.save(state, model_path)
                 print(f'Model(.pth) has been saved at {model_path}')
                 # TODO 最后一轮
                 info = {"dataset": Dataname,
                         "iter": i + 1,
-                        "Last Epoch": len(acc_list) * valid_check_num,
+                        "Last Epoch": epoch_ticks[-1],
                         "acc": acc_list[-1],
                         "Nmi": nmi_list[-1],
                         "Purity": pur_list[-1],
@@ -460,7 +462,7 @@ if __name__ == '__main__':
                 # TODO 2.最好一轮(不建议这样做，除非你有early stop的理由)
                 info = {"dataset": Dataname,
                         "iter": i + 1,
-                        "MAX Epoch": (max_index + 1) * valid_check_num,
+                        "MAX Epoch": epoch_ticks[max_index],
                         "acc": acc_list[max_index],
                         "Nmi": nmi_list[max_index],
                         "Purity": pur_list[max_index],
@@ -483,13 +485,13 @@ if __name__ == '__main__':
                 max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
                                                         acc_weight=0.25, nmi_weight=0.25,
                                                         pur_weight=0.25, ari_weight=0.25)
-                plot_acc(imgs_path, acc_list, Dataname, 'acc', valid_check_num)
-                plot_acc(imgs_path, nmi_list, Dataname, 'nmi', valid_check_num)
-                plot_acc(imgs_path, pur_list, Dataname, 'pur', valid_check_num)
-                plot_acc(imgs_path, ari_list, Dataname, 'ari', valid_check_num)
+                plot_acc(imgs_path, acc_list, Dataname, 'acc', epoch_ticks)
+                plot_acc(imgs_path, nmi_list, Dataname, 'nmi', epoch_ticks)
+                plot_acc(imgs_path, pur_list, Dataname, 'pur', epoch_ticks)
+                plot_acc(imgs_path, ari_list, Dataname, 'ari', epoch_ticks)
 
                 save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, Dataname, data_ratio,
-                                   valid_check_num)
+                                   valid_check_num, current_time)
                 # ELMC σ 变化曲线（非 fixed 模式才有数据；SIGMA_PRINT_ENABLED 关闭则自动跳过）
                 plot_sigma(get_sigma_history(), imgs_path, Dataname)
             print(f'Max metric: epoch{(max_index + 1) * valid_check_num}\n'

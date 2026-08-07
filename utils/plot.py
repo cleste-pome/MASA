@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 """
 # 用例
 plot_loss(imgs_path, preloss_list, Dataname, 'pretrain loss')
-plot_acc(imgs_path, acc_list, Dataname, 'acc', valid_check_num)
+plot_acc(imgs_path, acc_list, Dataname, 'acc', x_values=epoch_ticks)
 """
 
 
@@ -60,16 +60,23 @@ def plot_loss(imgs_path, loss_list, dataset_name, name):
 
 
 # 定义绘制准确率曲线的函数，参数acc_list为各轮训练的准确率列表
-def plot_acc(imgs_path, acc_list, dataset_name, name, Valid_check_num=1):
+def plot_acc(imgs_path, acc_list, dataset_name, name, x_values=None):
+    """绘制评价指标曲线。
+
+    :param x_values: 每个评价点对应的真实 epoch 列表（长度与 acc_list 一致，整数）；
+                     为 None 时退回按验证点序号 1..len(acc_list) 绘图。
+    """
     if not os.path.exists(imgs_path):
         os.makedirs(imgs_path)
 
-    # 获取总的训练轮数
+    # 获取总的训练轮数（点数）与横坐标（真实 epoch）
     epochs = len(acc_list)
+    x = x_values if x_values is not None else list(range(1, epochs + 1))
+    last_epoch = x[-1]
     # 设置绘图的大小
     plt.figure(figsize=(12, 6))
     # 绘制准确率曲线，设置线型、点标记、线宽等
-    plt.plot(range(1, epochs + 1), acc_list, marker='o', linestyle='-', linewidth=2, markersize=6)
+    plt.plot(x, acc_list, marker='o', linestyle='-', linewidth=2, markersize=6)
 
     # 设置x轴和y轴的标签及其字体大小
     plt.xlabel('Epoch', fontsize=14)
@@ -77,25 +84,30 @@ def plot_acc(imgs_path, acc_list, dataset_name, name, Valid_check_num=1):
     # 设置图表的标题及其字体大小
     plt.title(f'{dataset_name}[{name}]', fontsize=16)
 
-    # 计算最大准确率及其对应的轮数
+    # 计算最大准确率及其对应的轮数（真实 epoch）
     max_acc = max(acc_list)
-    max_epoch = acc_list.index(max_acc) + 1
+    max_epoch = x[acc_list.index(max_acc)]
     # 获取最后一轮的准确率
     last_acc = acc_list[-1]
 
     # 绘制表示最大准确率的水平线
     plt.axhline(y=max_acc, color='gray', linestyle='--', linewidth=0.5)
     # 在图表上标注最大准确率及其对应的轮数
-    plt.text(epochs, max_acc, f'Max Acc: {max_acc * 100:.2f}% at Epoch {max_epoch * Valid_check_num}', ha='right',
+    plt.text(last_epoch, max_acc, f'Max {name}: {max_acc * 100:.2f}% at Epoch {max_epoch}', ha='right',
              va='bottom',
              fontsize=10)
     # 在图表上标注最后一轮的准确率
     plt.text(1, 0, f'Last {name}: {last_acc * 100:.2f}%', ha='right', va='bottom', fontsize=10,
              transform=plt.gca().transAxes)
 
-    # 设置x轴的刻度：验证点较多时抽样显示（上限约10个刻度），避免横坐标挤成一团
+    # 设置x轴的刻度（整数）：验证点较多时抽样显示（上限约10个刻度），
+    # 并强制把最后一轮标到横坐标上
     step = max(1, math.ceil(epochs / 10))
-    plt.xticks(range(1, epochs + 1, step))
+    ticks = x[::step]
+    if last_epoch not in ticks:
+        ticks.append(last_epoch)
+    plt.xticks(ticks)
+    plt.xlim(min(x), max(x))
 
     # 设置y轴的刻度
     plt.yticks(np.arange(min(acc_list), max(acc_list) + 0.05, step=0.05))
@@ -105,7 +117,7 @@ def plot_acc(imgs_path, acc_list, dataset_name, name, Valid_check_num=1):
     plt.tight_layout()
 
     # TODO 文件名
-    filename = f'{imgs_path}/{dataset_name}_ep{epochs}_{name}.png'
+    filename = f'{imgs_path}/{dataset_name}_ep{last_epoch}_{name}.png'
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
 

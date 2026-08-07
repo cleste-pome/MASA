@@ -18,14 +18,15 @@ def find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list, acc_weig
     return max_index
 
 
-def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_name, data_rate, Valid_check_num):
+def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_name, data_rate, Valid_check_num,
+                       current_time):
     # 创建logs文件夹
     csv_path = f'3.csv'
     if not os.path.exists(csv_path):
         os.makedirs(csv_path)
 
-    # 创建以data_name命名的csv文件路径
-    file_path = os.path.join(csv_path, f'{data_name}_{data_rate}.csv')
+    # 创建以data_name命名的csv文件路径（文件名带时间戳，区分多次实验）
+    file_path = os.path.join(csv_path, f'{data_name}_{current_time}_{data_rate}.csv')
 
     # 写入数据到CSV文件
     with open(file_path, 'w', newline='') as csvfile:
@@ -117,13 +118,14 @@ def save_wz_view_to_csv(zs_results, epoch, filepath):
             os.remove(lock_path)
 
 
-def create_csv(data_name, data_rate, views):
-    # 创建logs文件夹，如果不存在
-    csv_dir = '3.csv/view'  # 创建日志目录
+def create_csv(data_name, data_rate, views, current_time):
+    # 创建logs文件夹，如果不存在（视图指标与汇总指标同放 3.csv/ 根下）
+    csv_dir = '3.csv'
     if not os.path.exists(csv_dir):
         os.makedirs(csv_dir)
 
-    filename = f'metrics_{data_name}_{data_rate}.csv'
+    # 命名与汇总指标统一：{data_name}_{current_time}_{data_rate}，视图文件用 view_ 前缀区分
+    filename = f'view_{data_name}_{current_time}_{data_rate}.csv'
     # 创建以data_name命名的csv文件路径
     filepath = os.path.join(csv_dir, filename)
 
