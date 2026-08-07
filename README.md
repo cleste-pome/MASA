@@ -166,7 +166,7 @@ ablation tables.
 
 The overall objective of the consistency training stage is the **total loss**:
 
-$$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con}, \quad \alpha = 1$$
+$$\mathcal{L} = \mathcal{L}_{rec} + \mathcal{L}_{sparse} + \alpha\, \mathcal{L}_{con} = \|\mathbf{x} - \hat{\mathbf{x}}\|_F^2 + \beta \cdot \mathrm{KL}(\rho \,\|\, \hat{\rho}) + \alpha \cdot \ell_{con}(H, r_v)$$
 
 where the first term is the reconstruction error, the second is the adaptive KL-sparsity term, and the third is the contrastive alignment term.
 
