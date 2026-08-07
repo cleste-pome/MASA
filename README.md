@@ -41,6 +41,7 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 - [4. 🔬 Loss](#4-loss)
 - [5. 🧩 Method Overview](#5--method-overview)
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
+- [🙏 Acknowledgments](#-acknowledgments)
 
 ### 🔗 Citation
 If this work or the code is helpful to you, please cite it when it is available😊:
@@ -245,3 +246,7 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 - **macOS**: MPS requires macOS ≥ 12.3 and an official PyTorch build; unsupported ops under MPS (`torch.cdist` / `torch.diag` in the ELMC module) automatically fall back to CPU — nothing to configure.
 - **Linux / Windows without CUDA**: falls back to CPU automatically. `OMP_NUM_THREADS=1` is preset in `train.py` to avoid thread oversubscription on CPU.
 - **CUDA**: to choose a specific GPU, set `CUDA_VISIBLE_DEVICES` (train.py presets `"0"`); multi-GPU is not required.
+
+### 🙏 Acknowledgments
+
+Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [SDMVC](https://github.com/SubmissionsIn/SDMVC), [MVCAN](https://github.com/SubmissionsIn/MVCAN) and [CPSPAN](https://github.com/jinjiaqi1998/CPSPAN). We would like to thank the authors for their valuable contributions to the multi-view clustering community.
