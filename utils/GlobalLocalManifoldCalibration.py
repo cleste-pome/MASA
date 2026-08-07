@@ -22,7 +22,7 @@ import torch
 #                 W_ab = exp(-d_ab^2 / (sigma_a * sigma_b))）
 # =====================================================================
 SCORE_FORM = 'trace'
-SIGMA_MODE = 'median'
+SIGMA_MODE = 'fixed'
 SIGMA_FIXED_VALUE = 1.0
 SIGMA_QUANTILE = 0.1
 SIGMA_KNN_K = 5
