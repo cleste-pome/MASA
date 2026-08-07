@@ -83,9 +83,10 @@ MASA
 ├── test.py                           # Evaluation (load .pth + dataset → forward → K-means)
 ├── MASA.py                           # Model definition (Network: Encoder/Decoder, projection head, cycle consistency, weighted fusion)
 ├── loss.py                           # Loss functions (contrastive + reconstruction/KL sparsity)
-├── main.tex                          # LaTeX source
 ├── datasets                          # Dataset directory (.mat: X view-cell array + Y labels)
+├── docs                               # Figures used in this README
 └── utils                             # Utilities
+    ├── count_datasetY.py             # Class distribution statistics & plots
     ├── dataloader.py                 # Data loading & preprocessing (min-max norm + noise/conflict/missing/sparsity injection)
     ├── device_check.py               # Device probing (CUDA > MPS > CPU, MASA_DEVICE override)
     ├── GlobalLocalManifoldCalibration.py # ELMC core (Laplacian trace-alignment view weights, adaptive σ, switchable ablation configs)
