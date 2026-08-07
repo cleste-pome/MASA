@@ -77,9 +77,7 @@ MASA
 - Each dataset is a single `.mat` file placed under `datasets/`, containing `X` (a cell array of view matrices) and `Y` (sample labels).
 - `train.py` automatically trains on every `.mat` file under `datasets/`.
 - Public multi-view datasets: https://github.com/wangsiwei2010/awesome-multi-view-clustering
-- If GitHub is slow or unreachable in your region, mirror services usually help, e.g.:
-  - **file download**: prefix the GitHub URL with a proxy, e.g. `https://ghproxy.com/https://github.com/<owner>/<repo>/<path>`（也可用 `https://mirror.ghproxy.com/`）;
-  - **git clone**: `git clone https://gitclone.com/github.com/<owner>/<repo>`.
+- 国内读者提示：GitHub 访问慢或不可达时可用镜像加速——文件下载把 `https://ghproxy.com/`（或 `https://mirror.ghproxy.com/`）拼在 GitHub 链接前即可，`git clone` 可用 `git clone https://gitclone.com/github.com/<owner>/<repo>`。
 
 ## 2. ✅Run
 
@@ -227,7 +225,7 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 | Linux / Windows (CPU only) | `pip install torch --index-url https://download.pytorch.org/whl/cpu` | CPU |
 | macOS (Apple Silicon) | `pip install torch` (official wheels include MPS support) | MPS |
 
-> **Tip**: official sources can be slow in some regions; domestic mirrors usually help, e.g. Tsinghua TUNA (`https://pypi.tuna.tsinghua.edu.cn/simple`) for general packages, or Aliyun PyTorch wheels (`https://mirrors.aliyun.com/pytorch-wheels/cu121`).（国内读者可把官方源换成清华/阿里云等镜像，安装会快很多。）
+> **提示**：官方源在国内下载较慢，一般 Python 包可换清华 TUNA 镜像（`https://pypi.tuna.tsinghua.edu.cn/simple`），PyTorch 可换阿里云镜像（`https://mirrors.aliyun.com/pytorch-wheels/cu121`）。
 
 ### Device selection (automatic, no configuration needed)
 
