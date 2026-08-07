@@ -170,7 +170,7 @@ The overall optimization objective is composed of the AVE loss and the GLDA loss
 
 $$\begin{aligned}
 \mathcal{L}_{\mathrm{total}} &= \mathcal{L}_{\mathrm{AVE}} + \alpha \times \mathcal{L}_{\mathrm{GLDA}} \\
-&= \sum_{v\in\mathcal{V}^{+}} \bigl( \mathcal{L}_{\mathrm{rec}}^{v} + f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v} \bigr) + \alpha \times \mathcal{L}_{\mathrm{GLDA}} \\
+&= \sum_{v\in\mathcal{V}^{+}} \bigl( \mathcal{L}_{\mathrm{rec}}^{v} + \mathcal{L}_{\mathrm{sparse}}^{v} \bigr) + \alpha \times \mathcal{L}_{\mathrm{GLDA}} \\
 &= \sum_{v\in\mathcal{V}^{+}} \bigl( \mathcal{L}_{\mathrm{rec}}^{v} + f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v} \bigr) + \alpha \times \sum_{v\in\mathcal{V}} \frac{1}{N} \sum_{p=1}^{N} \mathcal{L}_{\mathrm{con}}^{p,v}
 \end{aligned}$$
 
@@ -180,7 +180,7 @@ where α is the constraint ratio coefficient that governs the balance between th
 
 ## 4. 🧩 Method Overview
 
-Clustering, as the simplest and most intuitive self-supervised task, validates the effectiveness of an algorithm and its neural network by measuring the quality of the extracted and fused features.（聚类作为最简洁直观的自监督任务，通过衡量提取与融合到的特征质量，可以验证算法与神经网络模型的有效性。）
+Clustering, as the simplest and most intuitive self-supervised task, validates the effectiveness of an algorithm and its neural network by measuring the quality of the extracted and fused features.
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
 
