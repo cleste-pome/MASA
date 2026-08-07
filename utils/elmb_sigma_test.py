@@ -41,6 +41,24 @@ from utils.GlobalLocalManifoldCalibration import manifold_alignment_weights
 import utils.GlobalLocalManifoldCalibration as GLMC
 
 
+# 显示标签（判别力表用）
+COND_LABELS = {'raw': 'raw 特征', 'l2-norm': 'L2 归一化'}
+MODE_LABELS = {'median': 'median', 'fixed': 'fixed (σ=1)', 'mean': 'mean',
+               'quantile': 'quantile (0.1)', 'local': 'local (k=5)'}
+
+
+def verdict(w):
+    """判定：均匀回退 / 最强区分 / 能区分 / 分不出结构"""
+    if bool(torch.allclose(w, torch.full_like(w, 1.0 / len(w)), atol=1e-3)):
+        return '均匀回退'
+    r = float(w[0] / w[1])  # 对齐 / 打乱
+    if r >= 1.3:
+        return '最强区分'
+    if r >= 1.05:
+        return '能区分'
+    return '分不出结构'
+
+
 def parse_args():
     p = argparse.ArgumentParser(description='ELMC 带宽模式受控对比测试')
     p.add_argument('--samples', type=int, default=1000, help='样本数（默认 1000）')
@@ -75,7 +93,7 @@ def run_test(args, test_no):
     def normed(x):
         return torch.nn.functional.normalize(x, dim=1)
 
-    results, fallback = {}, {}
+    results, fallback, last_w = {}, {}, {}
     t_start = time.perf_counter()
     for cond_name, cond_fn in [('raw', lambda x: x), ('l2-norm', normed)]:
         for mode in modes:
@@ -91,6 +109,7 @@ def run_test(args, test_no):
                 w = manifold_alignment_weights(
                     [cond_fn(vA), cond_fn(vB), cond_fn(vC)], cond_fn(z_all)).detach()
                 wA_list.append(float(w[0]))
+                last_w[(cond_name, mode)] = w                         # 训练结束时的三视图权重
                 if bool(torch.allclose(w, torch.full_like(w, 1.0 / 3), atol=1e-4)):
                     fb += 1
             results[(cond_name, mode)] = wA_list
@@ -124,7 +143,16 @@ def run_test(args, test_no):
     # ================= 控制台汇总 =================
     calls = len(modes) * T * 2
     print(f'\n总耗时: {elapsed:.1f} s（{calls} 次调用, n={n}, T={T}）')
-    print(f"{'条件':<9}{'模式':<9}{'wA@epoch1':>10}{'wA@epoch100':>12}{'权重≈均匀epoch数':>14}")
+    print(f'\n=== 判别力表（训练结束时 = epoch {T} 的三视图权重） ===')
+    print(f"{'条件':<10}{'模式':<14}{'对齐':>7}{'打乱':>7}{'噪声':>7}{'对齐/打乱':>10}  判定")
+    for cond_name in ['raw', 'l2-norm']:
+        for mode in modes:
+            w = last_w[(cond_name, mode)]
+            r = float(w[0] / w[1])
+            print(f"{COND_LABELS[cond_name]:<10}{MODE_LABELS.get(mode, mode):<14}"
+                  f"{w[0]:>7.3f}{w[1]:>7.3f}{w[2]:>7.3f}{r:>9.2f}x  {verdict(w)}")
+    print(f'\n=== epoch 演化补充（对齐视图权重） ===')
+    print(f"{'条件':<9}{'模式':<9}{'wA@epoch1':>10}{f'wA@epoch{T}':>12}{'权重≈均匀epoch数':>14}")
     for cond_name in ['raw', 'l2-norm']:
         for mode in modes:
             w1, w100 = results[(cond_name, mode)][0], results[(cond_name, mode)][-1]
@@ -132,13 +160,13 @@ def run_test(args, test_no):
 
     # ================= 可选：写入 md 记录 =================
     if args.update_md:
-        write_md(args, test_no, results, fallback, elapsed, calls, fig_paths)
+        write_md(args, test_no, results, last_w, fallback, elapsed, calls, fig_paths)
         print(f'已追加写入测试记录: {args.md_path}')
 
     return results, fallback, elapsed
 
 
-def write_md(args, test_no, results, fallback, elapsed, calls, fig_paths):
+def write_md(args, test_no, results, last_w, fallback, elapsed, calls, fig_paths):
     """把本次测试的 参数+结果+耗时+图引用 追加进 md（结论留人工补充）"""
     now = datetime.datetime.now().strftime('%Y-%m-%d')
     lines = [
@@ -158,7 +186,20 @@ def write_md(args, test_no, results, fallback, elapsed, calls, fig_paths):
         '| 特征条件 | raw / l2-norm（对应代码 z_norm 预处理）两种 |',
         f'| 调用次数 | {calls} 次 |',
         '',
-        '**结果**（wA = 对齐视图权重，1/3 = 均匀基准）：',
+        f'**结果（训练结束时 = epoch {args.epochs} 的三视图权重，1/3 = 均匀基准）**：',
+        '',
+        '| 条件 | 模式 | 对齐 | 打乱 | 噪声 | 对齐/打乱 | 判定 |',
+        '|---|---|---|---|---|---|---|',
+    ]
+    for cond_name in ['raw', 'l2-norm']:
+        for mode in [m.strip() for m in args.modes.split(',') if m.strip()]:
+            w = last_w[(cond_name, mode)]
+            r = float(w[0] / w[1])
+            lines.append(f'| {COND_LABELS[cond_name]} | {MODE_LABELS.get(mode, mode)} | '
+                         f'{w[0]:.3f} | {w[1]:.3f} | {w[2]:.3f} | {r:.2f}x | {verdict(w)} |')
+    lines += [
+        '',
+        '**epoch 演化补充**（对齐视图权重，权重≈均匀含防御回退与核过平两种情形）：',
         '',
         '| 条件 | 模式 | wA@epoch1 | wA@epoch100 | 权重≈均匀的epoch数 |',
         '|---|---|---|---|---|',
