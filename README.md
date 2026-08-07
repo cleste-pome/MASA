@@ -92,7 +92,7 @@ python train.py
 (2) To run the **evaluation** with a trained model:
 
 ```shell
-python test.py --model 4.models --datasets MSRCV1
+python test.py --model 4.models --datasets ALOI-100
 ```
 
 Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
