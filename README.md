@@ -199,10 +199,6 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 | scipy | 1.18.0 | ≥ 1.10 | Load .mat datasets |
 | scikit-learn | 1.7.2 | ≥ 1.0 | K-means evaluation: ACC / NMI / PUR / ARI |
 
-```shell
-pip install numpy scipy scikit-learn
-```
-
 - PyTorch is installed separately per platform (see below); the GPU K-means alternatives (cuML/cuPy) are optional and **not** required by default.
 
 ### Install PyTorch per platform
