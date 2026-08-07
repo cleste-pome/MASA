@@ -169,20 +169,9 @@ ablation tables.
 The overall optimization objective is composed of the AVE loss and the GLDA loss; ELMC introduces no extra loss term, but connects them by calibrating the late fusion. The **total loss** is:
 
 $$\begin{aligned}
-\mathcal{L}_{\mathrm{total}}
-&=
-\mathcal{L}_{\mathrm{AVE}}
-+
-\alpha \times \mathcal{L}_{\mathrm{GLDA}}\\
-&=
-\sum_{v\in\mathcal{V}^{+}}
-\bigl(
-\mathcal{L}_{\mathrm{rec}}^{v}
-+
-f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v}
-\bigr)
-+
-\alpha \times \mathcal{L}_{\mathrm{GLDA}}
+\mathcal{L}_{\mathrm{total}} &= \mathcal{L}_{\mathrm{AVE}} + \alpha \times \mathcal{L}_{\mathrm{GLDA}} \\
+&= \sum_{v\in\mathcal{V}^{+}} \bigl( \mathcal{L}_{\mathrm{rec}}^{v} + f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v} \bigr) \\
+&\quad + \alpha \times \sum_{v\in\mathcal{V}} \frac{1}{N} \sum_{p=1}^{N} \mathcal{L}_{\mathrm{con}}^{p,v}
 \end{aligned}$$
 
 where α is the constraint ratio coefficient that governs the balance between the AVE loss and the GLDA loss.
