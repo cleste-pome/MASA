@@ -147,13 +147,13 @@ parser.add_argument('--sparsity_ratio', type=float, default=0.0)
 The overall objective integrates three terms:
 
 ```py
-# 1. loss_rec：重建损失（MSE），约束每个视图与其全局表示的自编码重建
+# 1. loss_rec: reconstruction (MSE), constraining the autoencoder of each view and the global representation
 ae_loss_function(mean_average, xs2one, xr_all, activation[0], rho=0.05, beta=1.0)
 
-# 2. loss_sparse：KL 稀疏约束，稀疏系数 C_spa 由各视图稀疏率自适应调节（AVE）
+# 2. loss_sparse: KL sparsity, coefficient C_spa adaptively modulated by each view's sparsity ratio (AVE)
 kl_sparse_loss(hidden_layer_activation, rho, sparse_beta)
 
-# 3. loss_con：对比损失，对齐全局融合特征 H 与各视图公共信息（GLDA）
+# 3. loss_con: contrastive loss aligning the global fused representation H with each view's common information (GLDA)
 contrastiveloss(H, rs[v], w2[v])
 ```
 
