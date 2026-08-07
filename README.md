@@ -180,6 +180,8 @@ where α is the constraint ratio coefficient that governs the balance between th
 
 ## 4. 🧩 Method Overview
 
+Clustering, as the simplest and most intuitive self-supervised task, validates the effectiveness of an algorithm and its neural network by measuring the quality of the extracted and fused features.（聚类作为最简洁直观的自监督任务，通过衡量提取与融合到的特征质量，可以验证算法与神经网络模型的有效性。）
+
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
 
 **① AVE — Adaptive View-specific Encoding** handles the cross-view sparsity heterogeneity typical of multi-view data: the sparsity ratio of each view is probed from its input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint — sparser views receive stronger sparse regularization, so that each view's encoder is tuned in a view-aware manner (adaptive sparse coefficient in `ae_loss_function`, `loss.py`).
