@@ -41,7 +41,7 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 - [4. 🔬 Loss](#4-loss)
 - [5. 🧩 Method Overview](#5--method-overview)
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
-- [🙏 Acknowledgments](#-acknowledgments)
+- [7. 🙏 Acknowledgments](#7--acknowledgments)
 
 ---
 
@@ -81,10 +81,14 @@ MASA
 ---
 
 ## 1. 📊Dataset
-- Each dataset is a single `.mat` file placed under `datasets/`, containing `X` (a cell array of view matrices) and `Y` (sample labels).
-- `train.py` automatically trains on every `.mat` file under `datasets/`.
-- Public multi-view datasets: https://github.com/wangsiwei2010/awesome-multi-view-clustering
-- 国内读者提示：GitHub 访问慢或不可达时，下载数据集等文件可以在链接前加上 [gh-proxy](https://gh-proxy.com/) 加速，`git clone` 拉代码时也可以改用 [gitclone.com](https://gitclone.com/) 的镜像地址。
+
+Multi-view clustering data describes the same set of samples from several complementary views — e.g. different feature extractors, image and text modalities, or gene expression profiles — where each view is one feature matrix. Good multi-view datasets provide views that are informative on their own and complementary to each other.
+
+In this repo, each dataset is a single `.mat` file placed under `datasets/`, containing:
+- `X`: a cell array of view matrices — `X{1}, X{2}, ...` are the feature matrices of views 1, 2, ..., each of shape `(num_samples, num_dimensions)`;
+- `Y`: a column vector of sample labels, of shape `(num_samples, 1)`.
+
+To use your own data, arrange the views into the cell array `X`, the labels into `Y`, save them into a `.mat` file (e.g. via `scipy.io.savemat`), and drop the file into `datasets/` — `train.py` picks it up automatically and trains on every `.mat` file in the folder. Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
 
 ---
 
@@ -265,6 +269,6 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 
 ---
 
-### 🙏 Acknowledgments
+## 7. 🙏 Acknowledgments
 
-Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [SDMVC](https://github.com/SubmissionsIn/SDMVC), [MVCAN](https://github.com/SubmissionsIn/MVCAN) and [CPSPAN](https://github.com/jinjiaqi1998/CPSPAN). We would like to thank the authors for their valuable contributions to the multi-view clustering community.
+Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [MFLVC](https://github.com/SubmissionsIn/MFLVC) and [DealMVC](https://github.com/xihongyang1999/DealMVC). We would like to thank the authors for their valuable contributions to the multi-view clustering community.
