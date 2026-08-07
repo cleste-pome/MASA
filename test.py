@@ -49,17 +49,17 @@ GLMC.SIGMA_PRINT_ENABLED = False  # 测试只评估一次，σ 变化观察无�
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 # TODO 1：模型权重路径 — 评估用的 .pth 文件，或权重目录（推荐目录）
-#   填 .pth 文件:  MODEL_PATH = "4.models/MSRCV1/MSRCV120260801-120042.pth"
+#   填 .pth 文件:  MODEL_PATH = "Weights/Out-Scene20250316-160558.pth"
 #   填目录（自动按数据集匹配权重，目录下每份权重都会评估、各占一行）:
 #                 MODEL_PATH = "4.models"
 #   留空 "" 时运行中会在控制台提示你输入
-MODEL_PATH = f"4.models"           # 字符串：权重路径（.pth 文件或目录）
+MODEL_PATH = "Weights/Out-Scene20250316-160558.pth"   # 字符串：权重路径（.pth 文件或目录）
 
 # TODO 2：要评估的数据集 — 逗号分隔；留空 = datasets/ 下全部 .mat（推荐）
 #   例: DATASETS = "ALOI-100"
 #   例: DATASETS = "ALOI-100,MSRCV1"
 #   例: DATASETS = "datasets/MSRCV1.mat"   ← 直接传 .mat 路径也可以（自动去路径）
-DATASETS = ""                                 # 字符串：数据集名或 .mat 路径，逗号分隔（留空 = datasets/ 下全部）
+DATASETS = "Out-Scene"                                # 字符串：数据集名或 .mat 路径，逗号分隔（留空 = datasets/ 下全部）
 
 # TODO 3：网络维度 — 必须与训练时一致（否则权重加载会报错）
 #   ⚠ 训练默认值是 64 / 20；若训练时改过 --feature_dim / --high_feature_dim，这里要同步
