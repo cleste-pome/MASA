@@ -197,7 +197,7 @@ MASA is a robust multi-view clustering framework built on three core modules and
 **② ELMC — Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, with an adaptive bandwidth (median heuristic, re-estimated every epoch), is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`utils/GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
 
 <p align="center">
-  <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="70%">
+  <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="90%">
 </p>
 
 <p align="center">
