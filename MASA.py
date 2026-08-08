@@ -1,11 +1,11 @@
 """
-MASA.py — 模型定义（对应论文 AVE + MASA 模块）
+MASA.py — 模型定义（对应 AVE + MASA 模块）
 ================================================
 包含：
   1. zero_value_proportion：各视图稀疏率探测（AVE 自适应机制的先验输入）
   2. Encoder / Decoder：视图特定与全局的自编码器
   3. Network：整体网络（AVE 自适应稀疏编码 → ELMC 加权融合 → 全局特征 H），
-     对应论文 AVE（自适应视图特定编码）与 MASA（早期-晚期流形一致性校准）
+     对应 AVE（自适应视图特定编码）与 MASA（早期-晚期流形一致性校准）
 """
 
 # ===================== 第三方库 =====================
@@ -119,13 +119,13 @@ class Network(nn.Module):
             + [Decoder(sum(input_size), feature_dim, 0.2).to(device)]
         )
 
-        # 全局特征融合层（晚期融合：加权视图特征 -> 高维公共表示）
+        # 全局特征融合层（晚期融合：加权视图特征 -> 压缩全局表示）
         self.feature_fusion_module = nn.Sequential(
             nn.Linear(feature_dim, 256),
             nn.ReLU(),
             nn.Linear(256, high_feature_dim),
         )
-        # 公共信息投影头（GLDA 对比对齐用）
+        # 压缩层（compression layer，GLDA 对比对齐用）
         self.common_information_module = nn.Sequential(
             nn.Linear(feature_dim, high_feature_dim),
         )
@@ -135,7 +135,7 @@ class Network(nn.Module):
             nn.Linear(feature_dim, 256),  # 线性层，将所有视角的特征维度合并并转换为256
             nn.ReLU(),  # 激活函数ReLU
             nn.Dropout(0.1),
-            nn.Linear(256, high_feature_dim)  # 线性层，将维度转换为高特征维度
+            nn.Linear(256, high_feature_dim)  # 线性层，将维度转换为压缩特征维度
         )
 
     # TODO (待定)循环一致性转化器函数

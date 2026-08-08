@@ -3,10 +3,10 @@ loss.py — MASA 损失函数
 ========================
 包含三部分：
   1. ContrastiveLoss：GLDA 全局-局部分布对齐使用的对比损失（支持多种损失形式，
-     论文默认 'classical'，其余为实验备选）
+     默认 'classical'，其余为实验备选）
   2. kl_divergence / kl_sparse_loss：AVE 的 KL 稀疏正则项
   3. ae_loss_function：AVE 自编码损失（重建 MSE + 自适应 KL 稀疏，系数 C_spa
-     由视图稀疏率自适应调节，对应论文 AVE 模块）
+     由视图稀疏率自适应调节，对应 AVE 模块）
 """
 
 import numpy as np
@@ -16,10 +16,10 @@ import torch.nn.functional as F
 
 
 class ContrastiveLoss(nn.Module):
-    """对比损失（GLDA 使用，loss_type='classical' 为论文默认）。
+    """对比损失（GLDA 使用，loss_type='classical' 为默认）。
 
     支持的损失形式：
-      - 'classical'     余弦（点积）相似度对比（论文默认）
+      - 'classical'     余弦（点积）相似度对比（默认）
       - 'nt_xent'       归一化温度缩放交叉熵（InfoNCE）
       - 'vicreg'        方差-协方差正则化（VICReg）
       - 'barlow_twins'  协方差去冗余（Barlow Twins）
@@ -62,7 +62,7 @@ class ContrastiveLoss(nn.Module):
         return fn(h_i, h_j, weight)
 
     def classical_loss(self, h_i, h_j, weight=None):
-        """'classical'：点积相似度对比损失（论文默认）。
+        """'classical'：点积相似度对比损失（默认）。
 
         正样本对 = 同一样本跨视图的嵌入（相似度矩阵对角线）；
         负样本对 = 其余所有跨视图组合（经掩码屏蔽对角线后保留）。
@@ -168,7 +168,7 @@ def kl_sparse_loss(hidden_layer_activation, rho, sparse_beta):
 
 
 def ae_loss_function(mean, reconstructed_x, x, hidden_layer_activation, rho=0.05, beta=1.0):
-    """AVE 自编码损失 = 重建 MSE + 自适应 KL 稀疏项（对应论文 AVE 模块）。
+    """AVE 自编码损失 = 重建 MSE + 自适应 KL 稀疏项（对应 AVE 模块）。
 
     稀疏系数 C_spa 由视图稀疏率 mean 自适应调节：
       - mean <= 阈值（0.01）：稀疏项关闭，退化为标准自编码器；

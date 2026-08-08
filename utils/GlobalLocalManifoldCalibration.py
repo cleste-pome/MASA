@@ -3,18 +3,18 @@ import torch
 # =====================================================================
 # 视图权重计算配置（只影响 manifold_alignment_weights）
 #
-#   SCORE_FORM —— 一致性分数形式（实验对比用，论文默认 'trace'）：
+#   SCORE_FORM —— 一致性分数形式（实验对比用，默认 'trace'）：
 #     'trace'     原始迹：S_v = Tr(L_v L_G)，同时保留结构对齐与视图
 #                 能量/尺度信息——能量作为视图表达强度的隐式先验，
-#                 供后续 GLDA 全局-局部对齐适配（论文 Eq. 9 原式）
+#                 供后续 GLDA 全局-局部对齐适配（Eq. 9 原式）
 #     'cosine'    余弦核对齐：S_v = Tr(L_v L_G)/(||L_v||_F * ||L_G||_F)
 #                 （仅结构方向、丢弃尺度，实验备选）
 #     'distance'  距离型：S_v = exp(-||L_v - L_G||_F^2)
 #     'l_sym'     谱归一化拉普拉斯 L = I - D^{-1/2} W D^{-1/2} + 原始迹
 #     'z_norm'    Z 先样本级 L2 归一化再算距离（余弦距离）+ 原始迹
 #
-#   SIGMA_MODE —— 高斯核带宽 σ 的设置方式（实验对比用，论文默认 'median'）：
-#     'median'    全局两两距离的中位数（median heuristic，论文 Step 2）
+#   SIGMA_MODE —— 高斯核带宽 σ 的设置方式（实验对比用，默认 'median'）：
+#     'median'    全局两两距离的中位数（median heuristic，Step 2）
 #     'fixed'     固定带宽（SIGMA_FIXED_VALUE，默认 1.0）
 #     'mean'      全局两两距离的均值
 #     'quantile'  两两距离的低分位数（SIGMA_QUANTILE，默认 0.1，强调近邻）
@@ -54,7 +54,7 @@ def manifold_alignment_weights(zs, z_all, sigma=None, device=None):
     S_v 的形式与 σ 的自适应方式由文件顶部 SCORE_FORM / SIGMA_MODE 控制
     :param zs: list，每个元素是一个Tensor，表示不同视图的样本矩阵 (m, d_i)
     :param z_all: Tensor，全局视图的样本矩阵 (m, d)
-    :param sigma: float，高斯核参数；None 时按论文 Step 2 取全局空间两两距离的中位数（median heuristic）
+    :param sigma: float，高斯核参数；None 时按 Step 2 取全局空间两两距离的中位数（median heuristic）
     :param device: str/None，目标设备；None 时自动取输入张量所在设备
     :return: Tensor，大小为 (n,)，表示每个视图的权重
     """
@@ -87,7 +87,7 @@ def manifold_alignment_weights(zs, z_all, sigma=None, device=None):
                 tri = torch.triu(global_d_all, diagonal=1)
                 non_zero = tri[tri > 0]
                 if SIGMA_MODE == 'median':
-                    # 论文 Step 2：带宽自适应设为全局空间两两欧氏距离的中位数
+                    # Step 2：带宽自适应设为全局空间两两欧氏距离的中位数
                     sigma = non_zero.median().item() if non_zero.numel() > 0 else 1.0
                 elif SIGMA_MODE == 'mean':
                     sigma = non_zero.mean().item() if non_zero.numel() > 0 else 1.0
@@ -156,7 +156,7 @@ def manifold_alignment_weights(zs, z_all, sigma=None, device=None):
     for i, z in enumerate(zs):
         L_i = laplacian_matrix(z)  # 计算每个视图的拉普拉斯矩阵
         if SCORE_FORM == 'trace' or SCORE_FORM == 'l_sym' or SCORE_FORM == 'z_norm':
-            # 原始迹（论文 Eq. 9）：同时保留结构对齐与视图能量/尺度信息
+            # 原始迹（Eq. 9）：同时保留结构对齐与视图能量/尺度信息
             weights[i] = torch.trace(torch.mm(L_i, L_G))
         elif SCORE_FORM == 'cosine':
             # 余弦核对齐：归一化消除嵌入尺度与图密度的影响
