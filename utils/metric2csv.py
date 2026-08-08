@@ -20,8 +20,8 @@ def find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list, acc_weig
 
 def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_name, data_rate, Valid_check_num,
                        current_time):
-    # 创建logs文件夹
-    csv_path = f'3.csv'
+    # 创建logs文件夹（汇总指标与视图指标同放 Metrics/ 下）
+    csv_path = f'3.csv/Metrics'
     if not os.path.exists(csv_path):
         os.makedirs(csv_path)
 
@@ -119,8 +119,8 @@ def save_wz_view_to_csv(zs_results, epoch, filepath):
 
 
 def create_csv(data_name, data_rate, views, current_time):
-    # 创建logs文件夹，如果不存在（视图指标与汇总指标同放 3.csv/ 根下）
-    csv_dir = '3.csv'
+    # 创建logs文件夹，如果不存在（视图指标与汇总指标同放 3.csv/Metrics/ 下）
+    csv_dir = '3.csv/Metrics'
     if not os.path.exists(csv_dir):
         os.makedirs(csv_dir)
 

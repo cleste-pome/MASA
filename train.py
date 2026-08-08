@@ -7,8 +7,8 @@
 【不需要你填写的】直接运行 python train.py 即可；所有超参数（轮数/学习率/
   特征维度等）在 main() 的 argparse 定义处均有默认值，需要调整时改那里
   （或命令行传参，如 python train.py --pre_epochs 300）。
-【输出】1.logs/ 日志、2.results_imgs/ 曲线、3.csv/ 指标、4.models/ 权重、
-        5.tsne/ 可视化、6.ViewWeights/ 视图权重。
+【输出】1.logs/ 日志、2.results_imgs/ 曲线、3.csv/ 指标与视图权重（Metrics/ + ViewWeights/）、
+        4.models/ 权重、5.tsne/ 可视化。
 =====================================================================
 """
 
@@ -41,7 +41,7 @@ from utils.dataloader import MATKind
 from utils.device_check import detect_device
 from utils.metric2csv import save_lists_to_file, find_max_weighted_sum_index, find_max_last_element_index, create_csv, \
     save_results_to_csv, save_wz_view_to_csv
-from utils.plot import plot_acc, plot_loss, plot_sigma
+from utils.plot import plot_acc, plot_acc_summary, plot_loss, plot_sigma
 from utils.tsne_visual import plot_embeddings, plot_svg_embeddings
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -168,7 +168,7 @@ def pretrain(Epoch, Dataset_name, current_time):
         optimizer.zero_grad()
         # 前向传播：通过模型计算重建后的输入、隐藏表示和其他中间结果
         xrs, zs, rs, H, xr_all, z_all, activation, means, wz_view = model(xs)
-        save_wz_view_to_csv(wz_view, Epoch + 1, f'6.ViewWeights/{Dataset_name}/{Dataset_name}_{current_time}')
+        save_wz_view_to_csv(wz_view, Epoch + 1, f'3.csv/ViewWeights/{Dataset_name}_{current_time}')
         # 计算平均值
         mean_average = sum(means) / len(means)
         # TODO pre 1 全局视角
@@ -224,7 +224,7 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time)
             xs[v] = xs[v].to(device)  # 将数据移动到指定设备（如GPU）
         optimizer.zero_grad()  # 清空梯度
         xrs, zs, rs, H, xr_all, z_all, activation, means, wz_view = model(xs)  # TODO 2.前向传播，获取重建后的输入、编码特征、视角一致特征和全局特征
-        save_wz_view_to_csv(wz_view, Epoch + 1, f'6.ViewWeights/{Dataset_name}/{Dataset_name}_{current_time}')
+        save_wz_view_to_csv(wz_view, Epoch + 1, f'3.csv/ViewWeights/{Dataset_name}_{current_time}')
         # TODO C.3 视图权重, wz_view
         # TODO 降维可视化
         # if Epoch == Total_epochs - 1:
@@ -288,9 +288,9 @@ if __name__ == '__main__':
             parser.add_argument('--batch_size', default=256, type=int)
             parser.add_argument("--learning_rate", type=float, default=0.0003)
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
-            parser.add_argument("--con_epochs", type=int, default=1000)  # 300/600
+            parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
             parser.add_argument("--iter", type=int, default=1)
-            parser.add_argument("--feature_dim", type=int, default=64)
+            parser.add_argument("--feature_dim", type=int, default=60)
             parser.add_argument("--high_feature_dim", type=int, default=20)
             parser.add_argument("--seed", type=int, default=50)
             parser.add_argument("--weight_decay", type=float, default=0.0)
@@ -302,6 +302,7 @@ if __name__ == '__main__':
             parser.add_argument('--missing_ratio', type=float, default=0.0)
             # TODO 选取sparsity ratio比例维度的随机(1到dims-1)个维度做置0处理
             parser.add_argument('--sparsity_ratio', type=float, default=0.0)
+            parser.add_argument("--plot_sigma", action="store_true", help="ELMC σ curve")
             args = parser.parse_args()
             # TODO log创建
             log_path = f'1.logs'
@@ -379,12 +380,12 @@ if __name__ == '__main__':
 
                 # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好设置为1
                 if data_size >= 2500:  # large
-                    args.con_epochs = 1000  # small/large 300/600
-                    pre_check_num = 10
-                    valid_check_num = 1
+                    args.con_epochs = 600  # small/large 300/600
+                    pre_check_num = 100
+                    valid_check_num = 10
                 else:  # small
                     pre_check_num = 10
-                    valid_check_num = 1
+                    valid_check_num = 10
 
                 with measure(f"{Dataname}: 预训练"):
                     for epoch in tqdm(range(args.pre_epochs)):
@@ -402,7 +403,7 @@ if __name__ == '__main__':
                             nmi_list.append(nmi)
                             pur_list.append(pur)
                             ari_list.append(ari)
-                plot_loss(imgs_path, preloss_list, Dataname, 'pretrain loss')
+                plot_loss(imgs_path, preloss_list, Dataname, 'pretrain_loss', args.pre_epochs + args.con_epochs)
 
                 with measure(f"{Dataname}: 一致性训练"):
                     for epoch in tqdm(range(args.con_epochs)):
@@ -428,7 +429,7 @@ if __name__ == '__main__':
                         max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
                                                                 acc_weight=0.25, nmi_weight=0.25,
                                                                 pur_weight=0.25, ari_weight=0.25)
-                plot_loss(imgs_path, conloss_list, Dataname, 'con loss')
+                plot_loss(imgs_path, conloss_list, Dataname, 'con_loss', args.pre_epochs + args.con_epochs)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
                 state = model.state_dict()
@@ -485,15 +486,19 @@ if __name__ == '__main__':
                 max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
                                                         acc_weight=0.25, nmi_weight=0.25,
                                                         pur_weight=0.25, ari_weight=0.25)
-                plot_acc(imgs_path, acc_list, Dataname, 'acc', epoch_ticks)
-                plot_acc(imgs_path, nmi_list, Dataname, 'nmi', epoch_ticks)
-                plot_acc(imgs_path, pur_list, Dataname, 'pur', epoch_ticks)
-                plot_acc(imgs_path, ari_list, Dataname, 'ari', epoch_ticks)
+                plot_acc(imgs_path, acc_list, Dataname, 'acc', epoch_ticks, args.pre_epochs)
+                plot_acc(imgs_path, nmi_list, Dataname, 'nmi', epoch_ticks, args.pre_epochs)
+                plot_acc(imgs_path, pur_list, Dataname, 'pur', epoch_ticks, args.pre_epochs)
+                plot_acc(imgs_path, ari_list, Dataname, 'ari', epoch_ticks, args.pre_epochs)
+                plot_acc_summary(imgs_path,
+                                 {'acc': acc_list, 'nmi': nmi_list, 'pur': pur_list, 'ari': ari_list},
+                                 Dataname, epoch_ticks, args.pre_epochs)
 
                 save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, Dataname, data_ratio,
                                    valid_check_num, current_time)
-                # ELMC σ 变化曲线（非 fixed 模式才有数据；SIGMA_PRINT_ENABLED 关闭则自动跳过）
-                plot_sigma(get_sigma_history(), imgs_path, Dataname)
+                # ELMC σ 变化曲线（默认不绘制，--plot_sigma 开启；SIGMA_PRINT_ENABLED 关闭则无数据自动跳过）
+                if args.plot_sigma:
+                    plot_sigma(get_sigma_history(), imgs_path, Dataname)
             print(f'Max metric: epoch{(max_index + 1) * valid_check_num}\n'
                   f'1.acc:{acc_list[max_index] * 100:.2f}%\n'
                   f'2.nmi:{nmi_list[max_index] * 100:.2f}%\n'

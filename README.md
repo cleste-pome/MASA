@@ -65,7 +65,7 @@ python train.py
 ```
 
 - The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
-- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics), `4.models/` (.pth weights), `5.tsne/` (t-SNE), `6.ViewWeights/` (per-epoch ELMC view weights).
+- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics + view weights), `4.models/` (.pth weights), `5.tsne/` (t-SNE).
 
 (2) To run the **evaluation** with a trained model:
 
@@ -109,7 +109,7 @@ The dataset folder and output directories are handled automatically; the device 
 # Dataset folder path (all .mat files under it are trained in turn)
 folder_path = "datasets"
 # Output directories are created at runtime:
-# 1.logs/ 2.results_imgs/ 3.csv/ 4.models/ 5.tsne/ 6.ViewWeights/
+# 1.logs/ 2.results_imgs/ 3.csv/(Metrics, ViewWeights) 4.models/ 5.tsne/
 ```
 
 ### 2.2 Hyperparameters
@@ -144,6 +144,21 @@ parser.add_argument('--missing_ratio', type=float, default=0.0)
 parser.add_argument('--sparsity_ratio', type=float, default=0.0)
 ```
 
+### 2.4 Outputs
+
+All output directories are created automatically. All files of one dataset run share the same timestamp in their names (`{dataset}_{timestamp}`), so results from the same run are easy to pair.
+
+| Directory | Contents | Naming |
+|---|---|---|
+| `1.logs/` | Training logs per dataset (also holds the class-distribution report figure) | `{dataset}/{dataset}_{timestamp}_{ratio}.log` |
+| `2.results_imgs/` | Training curves (loss / ACC / NMI / PUR / ARI) and the ELMC σ curve | `{dataset}_{timestamp}/{dataset}_ep{epochs}_{name}.png` |
+| `3.csv/Metrics/` | Per-epoch metrics: summary and per-view + global | `{dataset}_{timestamp}_{ratio}.csv`, `view_{dataset}_{timestamp}_{ratio}.csv` |
+| `3.csv/ViewWeights/` | Per-epoch ELMC view weights | `{dataset}_{timestamp}.csv` |
+| `4.models/` | Trained model weights (.pth) | `{dataset}/{dataset}_{timestamp}.pth` |
+| `5.tsne/` | t-SNE visualizations of features (PDF + SVG) | `{dataset}_{timestamp}/{epoch}_{dataset}[_EarlyFusion].pdf` |
+
+Where `{dataset}` is the dataset name, `{timestamp}` is the run time (one per dataset, shared by all its outputs), `{ratio}` is the perturbation setting `{noise}_{conflict}_{missing}`, and `{name}` is the metric name (`acc` / `nmi` / `pur` / `ari`).
+
 ---
 
 ## 3. 🔬 Loss
@@ -167,15 +182,7 @@ score form and bandwidth setting can be switched at the top of
 `utils/GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
 ablation tables.
 
-The overall optimization objective is composed of the AVE loss and the GLDA loss; ELMC introduces no extra loss term, but connects them by calibrating the late fusion. The **total loss** is:
-
-$$\begin{aligned}
-\mathcal{L}_{\mathrm{total}} &= \mathcal{L}_{\mathrm{AVE}} + \alpha \times \mathcal{L}_{\mathrm{GLDA}} \\
-&= \sum_{v\in\mathcal{V}^{+}} \bigl( \mathcal{L}_{\mathrm{rec}}^{v} + \mathcal{L}_{\mathrm{sparse}}^{v} \bigr) + \alpha \times \mathcal{L}_{\mathrm{GLDA}} \\
-&= \sum_{v\in\mathcal{V}^{+}} \bigl( \mathcal{L}_{\mathrm{rec}}^{v} + f(s_v)\,\mathcal{L}_{\mathrm{ent}}^{v} \bigr) + \alpha \times \sum_{v\in\mathcal{V}} \frac{1}{N} \sum_{p=1}^{N} \mathcal{L}_{\mathrm{con}}^{p,v}
-\end{aligned}$$
-
-where α is the constraint ratio coefficient that governs the balance between the AVE loss and the GLDA loss.
+The overall objective combines two terms, balanced by a constraint ratio coefficient: the **AVE loss**, summed over all views, of the reconstruction error plus the adaptive entropy-based sparsity penalty (whose strength is modulated by each view's probed sparsity ratio); and the **GLDA loss**, the contrastive alignment between the global fused representation and each view's common information, averaged over views and samples.
 
 ---
 
@@ -260,6 +267,6 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 
 ---
 
-## 7. 🙏 Acknowledgments
+## 7. 🤝 Acknowledgments
 
 Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [RCML](https://github.com/jiajunsi/RCML), [DCG](https://github.com/zhangyuanyang21/2025-AAAI-DCG) and the [Awesome-Deep-Graph-Clustering](https://github.com/yueliu1999/Awesome-Deep-Graph-Clustering) collection. We would like to thank the authors for their valuable contributions to the multi-view clustering community.
