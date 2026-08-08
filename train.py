@@ -290,9 +290,9 @@ if __name__ == '__main__':
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
             parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
             parser.add_argument("--iter", type=int, default=1)
-            parser.add_argument("--feature_dim", type=int, default=70)
+            parser.add_argument("--feature_dim", type=int, default=64)
             parser.add_argument("--high_feature_dim", type=int, default=20)
-            parser.add_argument("--seed", type=int, default=42)
+            parser.add_argument("--seed", type=int, default=0)
             parser.add_argument("--weight_decay", type=float, default=0.0)
             # TODO 选取noise ratio比例的样本，随机(1到view-1)个视图做添加高斯噪声处理
             parser.add_argument('--noise_ratio', type=float, default=0.0)
@@ -349,8 +349,6 @@ if __name__ == '__main__':
             if not os.path.exists(f'./{pth_path}'):
                 os.makedirs(f'./{pth_path}')
             acc_l, nmi_l, pur_l, ari_l, seed_l, lr_l, loss_l = [], [], [], [], [], [], []
-            # 默认验证间隔，循环外（如 --iter 0）不会因 valid_check_num 未定义而崩
-            pre_check_num, valid_check_num = 100, 10
             T = args.iter  # 循环测试次数，用于获取更准确地评价指标（平均值和方差）
             seed = args.seed
             lr = args.learning_rate
@@ -382,7 +380,7 @@ if __name__ == '__main__':
                 if data_size >= 2500:  # large
                     args.con_epochs = 600  # small/large 300/600
                     pre_check_num = 100
-                    valid_check_num = 10
+                    valid_check_num = 100
                 else:  # small
                     pre_check_num = 10
                     valid_check_num = 1

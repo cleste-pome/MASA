@@ -123,10 +123,10 @@ parser.add_argument("--con_epochs", type=int, default=300)
 parser.add_argument("--learning_rate", type=float, default=0.0003)
 parser.add_argument("--weight_decay", type=float, default=0.0)
 # Feature dimensions (per-view encoder output / high-level common feature)
-parser.add_argument("--feature_dim", type=int, default=70)
+parser.add_argument("--feature_dim", type=int, default=64)
 parser.add_argument("--high_feature_dim", type=int, default=20)
 # Random seed and number of runs
-parser.add_argument("--seed", type=int, default=42)
+parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--iter", type=int, default=1)
 ```
 

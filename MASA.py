@@ -130,6 +130,18 @@ class Network(nn.Module):
             nn.Linear(feature_dim, high_feature_dim),
         )
 
+        # 循环一致性转化器
+        self.cycle_transfer_module = nn.Sequential(
+            nn.Linear(feature_dim, 256),  # 线性层，将所有视角的特征维度合并并转换为256
+            nn.ReLU(),  # 激活函数ReLU
+            nn.Dropout(0.1),
+            nn.Linear(256, high_feature_dim)  # 线性层，将维度转换为高特征维度
+        )
+
+    # TODO (待定)循环一致性转化器函数
+    def cycle_transfer(self, z):
+        return self.cycle_transfer_module(z)
+
     def feature_fusion(self, zs, Wz):
         """按视图权重加权融合视图特征，得到全局特征 H（L2 归一化）。
 
