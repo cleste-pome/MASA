@@ -290,9 +290,9 @@ if __name__ == '__main__':
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
             parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
             parser.add_argument("--iter", type=int, default=1)
-            parser.add_argument("--feature_dim", type=int, default=60)
+            parser.add_argument("--feature_dim", type=int, default=70)
             parser.add_argument("--high_feature_dim", type=int, default=20)
-            parser.add_argument("--seed", type=int, default=50)
+            parser.add_argument("--seed", type=int, default=42)
             parser.add_argument("--weight_decay", type=float, default=0.0)
             # TODO 选取noise ratio比例的样本，随机(1到view-1)个视图做添加高斯噪声处理
             parser.add_argument('--noise_ratio', type=float, default=0.0)
@@ -385,7 +385,7 @@ if __name__ == '__main__':
                     valid_check_num = 10
                 else:  # small
                     pre_check_num = 10
-                    valid_check_num = 10
+                    valid_check_num = 1
 
                 with measure(f"{Dataname}: 预训练"):
                     for epoch in tqdm(range(args.pre_epochs)):

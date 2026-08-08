@@ -107,10 +107,12 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
     share = counts_sorted / total * 100
     cum = np.cumsum(counts_sorted) / total * 100
     ranks = np.arange(1, len(counts_sorted) + 1)
+    # 点数多时 marker 抽样（约每 1/10 处一个点），避免长尾段挤成一团
+    mark_every = max(1, len(ranks) // 10)
     ax_rank.plot(ranks, share, marker="o", color=COLOR_BLUE, linewidth=1.8, markersize=7,
-                 label="Per-class share")
+                 markevery=mark_every, label="Per-class share")
     ax_rank.plot(ranks, cum, marker=".", color=COLOR_ORANGE, linewidth=1.4, markersize=6,
-                 label="Cumulative share")
+                 markevery=mark_every, label="Cumulative share")
     ax_rank.set_xlabel("Rank")
     ax_rank.set_ylabel("Share (%)")
     ax_rank.set_title(f"{dataset_name} - Long-tail & Coverage Analysis", fontsize=14)
@@ -119,13 +121,11 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
     # 强制横坐标刻度为整数，并自动控制显示密度
     ax_rank.xaxis.set_major_locator(MaxNLocator(integer=True, nbins=8))
     ax_rank.legend(frameon=False, fontsize=9, loc="upper right")
-    # Top-K 标注：保证包含半程点 Top-K//2（如 8 类必有 Top-4）；相邻标注上下交替错开；
-    # 末位 Top-K 恒为 100% 且贴边易截断，不标注
-    top_keys = [1, 3, 5, 10, 20, 50, 100] if K >= 20 else [1, 2, 3, 5, 10]
-    if K // 2 >= 1:
-        top_keys.append(K // 2)
-    top_keys = sorted(set(top_keys))
-    label_step = max(share) * 0.05
+    # Top-K 标注：按排名百分比取点（1%,2%,5%,10%,20%,50%,100%），类别数多时均匀铺开、
+    # 不挤在长尾头部；自然包含半程点（50%，如 8 类必有 Top-4）；相邻标注上下交替错开；
+    # 末位 Top-K（=K）恒为 100% 且贴边易截断，不标注
+    top_keys = sorted({max(1, int(round(p * K))) for p in (0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0)})
+    label_step = max(share) * 0.06
     for idx, k in enumerate(top_keys):
         if len(cum) > k:
             offset = label_step if idx % 2 == 0 else -label_step

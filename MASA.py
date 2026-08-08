@@ -8,10 +8,12 @@ MASA.py — 模型定义（对应论文 AVE + MASA 模块）
      对应论文 AVE（自适应视图特定编码）与 MASA（早期-晚期流形一致性校准）
 """
 
+# ===================== 第三方库 =====================
 import torch
 import torch.nn as nn
 from torch.nn.functional import normalize
 
+# ===================== 项目内部模块 =====================
 from utils.GlobalLocalManifoldCalibration import manifold_alignment_weights
 
 
@@ -97,7 +99,6 @@ class Network(nn.Module):
       - 一个拼接全局编码器/解码器（早期融合的全局表示）
       - ELMC 视图权重（manifold_alignment_weights）加权晚期融合 -> 全局特征 H
       - common_information_module：视图公共信息投影（GLDA 对比对齐用）
-      - cycle_transfer_module：循环一致性转化器（保留视图特定保真）
     """
 
     def __init__(self, view, input_size, feature_dim, high_feature_dim, device):
@@ -128,17 +129,6 @@ class Network(nn.Module):
         self.common_information_module = nn.Sequential(
             nn.Linear(feature_dim, high_feature_dim),
         )
-        # 循环一致性转化器（跨视图一致性约束）
-        self.cycle_transfer_module = nn.Sequential(
-            nn.Linear(feature_dim, 256),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(256, high_feature_dim),
-        )
-
-    def cycle_transfer(self, z):
-        """循环一致性转化：视图特征 -> 公共表示空间。"""
-        return self.cycle_transfer_module(z)
 
     def feature_fusion(self, zs, Wz):
         """按视图权重加权融合视图特征，得到全局特征 H（L2 归一化）。
