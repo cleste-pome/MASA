@@ -268,4 +268,4 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 
 ## 7. 🤝 Acknowledgments
 
-Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [RCML](https://github.com/jiajunsi/RCML), [DCG](https://github.com/zhangyuanyang21/2025-AAAI-DCG) and the [Awesome-Deep-Graph-Clustering](https://github.com/yueliu1999/Awesome-Deep-Graph-Clustering) collection. We would like to thank the authors for their valuable contributions to the multi-view clustering community.
+Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [RCML](https://github.com/jiajunsi/RCML), [DCG](https://github.com/zhangyuanyang21/2025-AAAI-DCG) and the [Awesome-Deep-Multi-View-Clustering]([https://github.com/yueliu1999/Awesome-Deep-Graph-Clustering](https://github.com/jinjiaqi1998/Awesome-Deep-Multi-View-Clustering)) collection. We would like to thank the authors for their valuable contributions to the multi-view clustering community.
