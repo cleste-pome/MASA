@@ -46,21 +46,21 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"  # 设置OMP_NUM_THREADS环境变量
 
 from utils.scripts import PLOT_SIGMA, setup_seed, timing_secs, measure, print_model_summary, \
-    print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list
+    print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list, _log_file_only
+
+_CURRENT_PBAR = None  # 当前阶段进度条（主循环设置，训练函数内据此选择 tqdm.write 或 print 输出详情）
 
 
-def _log_file_only(logger, text):
-    """只写日志文件、不打印终端（结果字典等长篇记录）；返回日志路径供终端一句提示"""
-    for handler in logger.handlers:
-        path = getattr(handler, "baseFilename", None)
-        if path:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
-            return path
-    return None
+def pretrain(Epoch, Dataset_name, current_time):
+    """AVE 预训练一个 epoch：前向 → 重建+稀疏损失 → 反向更新，返回本轮平均损失。
 
-
-def pretrain(Epoch, Dataset_name, current_time, pbar=None):
+    :param Epoch: 当前轮次（从 0 开始，用于 t-SNE 输出与进度显示）
+    :param Dataset_name: 数据集名（t-SNE 输出路径与分段计时分组用）
+    :param current_time: 数据集级时间戳（输出文件命名）
+    :return: 本轮平均损失（全局 AE + 各视图 AE）
+    每轮详情经当前阶段进度条（_CURRENT_PBAR）用 tqdm.write 输出；无进度条时用 print。
+    """
+    pbar = _CURRENT_PBAR  # 当前阶段进度条，None 表示没有（如日志重定向场景）
     tot_loss = 0.  # 初始化总损失
     tot_global_ae = 0.  # 全局 AE（重建+稀疏）分量累计
     tot_view_ae = 0.  # 各视图 AE（重建+稀疏）分量累计
@@ -143,12 +143,18 @@ def pretrain(Epoch, Dataset_name, current_time, pbar=None):
     return pretrain_loss
 
 
-def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time, pbar=None):
+def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time):
+    """一致性训练一个 epoch：前向 → 重建+稀疏+对比损失 → 反向更新，返回本轮平均损失。
+
+    :param Epoch: 当前轮次（全局轮数，在 pre 阶段之后续算）
+    :param Dataset_name: 数据集名（视图权重 CSV 路径与分段计时分组用）
+    :param Total_epochs: pre+con 总轮数（进度显示与最后一轮判断用）
+    :param Plot_SDD: 最后一轮触发特征分离图（当前为预留开关，未启用）
+    :param current_time: 数据集级时间戳（输出文件命名）
+    :return: 本轮平均损失（全局 AE + 各视图 AE + 各视图对比损失）
+    每轮详情经当前阶段进度条（_CURRENT_PBAR）用 tqdm.write 输出；无进度条时用 print。
     """
-    CVDA：基于对比的视图级分布对齐训练过程
-    :param Epoch: 当前的训练轮次
-    Plot_SDD： 我发明的维度分布蜡烛图:D文章还在写（鸽子咕咕咕）
-    """
+    pbar = _CURRENT_PBAR  # 当前阶段进度条，None 表示没有（如日志重定向场景）
     tot_loss = 0.  # 初始化总损失
     tot_global_ae = 0.  # 全局 AE（重建+稀疏）分量累计
     tot_view_ae = 0.  # 各视图 AE（重建+稀疏）分量累计
@@ -229,9 +235,8 @@ if __name__ == '__main__':
     for Dataname in file_names:
         if Dataname.endswith(".mat"):
             Dataname = Dataname[:-4]
-            parser = argparse.ArgumentParser(description='train')
+            parser = argparse.ArgumentParser(description='train') # 超参数
             parser.add_argument('--dataset', default=Dataname)
-            # 超参数
             parser.add_argument('--batch_size', default=256, type=int)
             parser.add_argument("--learning_rate", type=float, default=0.0003)
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
@@ -347,8 +352,9 @@ if __name__ == '__main__':
                     print(f'---------------------------------------{Dataname}[{data_iter}]---------------------------------------')
                     print(f"\n[Train] Pretrain stage ({args.pre_epochs} epochs)")
                     pbar = tqdm(total=args.pre_epochs, desc="Pretrain", unit="epoch", bar_format=BAR_FORMAT)
+                    _CURRENT_PBAR = pbar  # 训练函数内据此用 tqdm.write 输出详情
                     for epoch in range(args.pre_epochs):
-                        preloss = pretrain(epoch, Dataname, current_time, pbar)  # 1.pre-train
+                        preloss = pretrain(epoch, Dataname, current_time)  # 1.pre-train
                         preloss_list.append(preloss)
                         if (epoch + 1) % pre_check_num == 0:  # TODO pre_check_num 1. pre
                             with measure(f"{Dataname}: Validation (KMeans)"):
@@ -364,18 +370,20 @@ if __name__ == '__main__':
                             ari_list.append(ari)
                         pbar.update(1)
                     pbar.close()
+                    _CURRENT_PBAR = None
                 plot_loss(imgs_path, preloss_list, Dataname, 'pretrain_loss', args.pre_epochs + args.con_epochs)
 
                 with measure(f"{Dataname}: Consistency training"):
                     print(f"\n[Train] Consistency stage ({args.con_epochs} epochs)")
                     pbar = tqdm(total=args.con_epochs, desc="Consistency", unit="epoch", bar_format=BAR_FORMAT)
+                    _CURRENT_PBAR = pbar  # 训练函数内据此用 tqdm.write 输出详情
                     for epoch in range(args.con_epochs):
                         epoch = args.pre_epochs + epoch
                         plot_SDD = False
                         total_epochs = args.pre_epochs + args.con_epochs
                         if epoch + 1 == total_epochs:
                             plot_SDD = True
-                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time, pbar)  # 2.contrastive train
+                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)  # 2.contrastive train
                         conloss_list.append(conloss)
                         # TODO valid_check_num 2. con
                         if (epoch + 1) % valid_check_num == 0:  # TODO con
@@ -394,6 +402,7 @@ if __name__ == '__main__':
                                                                 pur_weight=0.25, ari_weight=0.25)
                         pbar.update(1)
                     pbar.close()
+                    _CURRENT_PBAR = None
                 plot_loss(imgs_path, conloss_list, Dataname, 'con_loss', args.pre_epochs + args.con_epochs)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)

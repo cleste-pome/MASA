@@ -39,7 +39,7 @@ def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_n
             csvwriter.writerow([epoch, acc, nmi, pur, ari, loss])
             epoch += 1 * Valid_check_num
 
-    print(f'Metrics have been saved at {file_path}')
+    pass  # 保存路径不逐个打印，训练结束由 train.py 统一输出一句结果位置
 
 
 def find_max_last_element_index(acc_l):

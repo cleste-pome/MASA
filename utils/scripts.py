@@ -94,6 +94,17 @@ def _fmt_ratio_list(values, nd=4):
     return "[" + ", ".join(f"{v:.{nd}f}" for v in values) + "]"
 
 
+def _log_file_only(logger, text):
+    """只写日志文件、不打印终端（结果字典等长篇记录）；返回日志路径供终端一句提示"""
+    for handler in logger.handlers:
+        path = getattr(handler, "baseFilename", None)
+        if path:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
+            return path
+    return None
+
+
 def _kv(key, value, width=24):
     """'key = value' 定宽左对齐（终端分区排版：一行三个键值对，总宽一致列对齐）"""
     return f"{key} = {value}".ljust(width)
