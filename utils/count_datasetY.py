@@ -181,5 +181,3 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
         plt.show(block=False)
         plt.pause(pause_sec)
         plt.close()
-
-    print(f"Plot saved as {out_path}")

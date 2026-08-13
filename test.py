@@ -40,8 +40,6 @@ from MASA import Network                      # 网络结构定义（AVE+MASA）
 from utils.metric import valid                 # 聚类评估（ACC/NMI/PUR/ARI）
 from utils.device_check import detect_device  # 设备自动选择（CUDA > MPS > CPU）
 from utils.dataloader import MATKind          # 数据集加载（.mat 多视图格式）
-from utils import GlobalLocalManifoldCalibration as GLMC  # 用于关闭 σ 周期打印（见下行）
-GLMC.SIGMA_PRINT_ENABLED = False  # 测试只评估一次，σ 变化观察无意义，关掉
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -92,7 +90,7 @@ def collect_datasets(names=None):
             if os.path.isfile(os.path.join("datasets", n + ".mat")):
                 out.append(n)
             else:
-                print(f"[跳过] datasets/{n}.mat 不存在")
+                print(f"[skip] datasets/{n}.mat not found")
         return out
     return [f[:-4] for f in sorted(os.listdir("datasets")) if f.endswith(".mat")]
 
@@ -161,17 +159,17 @@ if __name__ == '__main__':
     # 权重路径优先级：--model > MODEL_PATH > 控制台交互输入
     model_arg = args.model or (MODEL_PATH.strip() or None)
     if model_arg is None:
-        print('未指定模型路径：可在文件顶部 TODO 1 填 MODEL_PATH，或直接输入（如 4.models）：')
+        print('No model path given: set MODEL_PATH at the top of this file, or type one (e.g. 4.models):')
         if os.path.isdir('4.models'):
             subs = sorted(os.listdir('4.models'))
-            print(f'当前可用（4.models/ 下）: {", ".join(subs) if subs else "（空）"}')
+            print(f'Available under 4.models/: {", ".join(subs) if subs else "(empty)"}')
         model_arg = input('> ').strip()
         if not model_arg:
-            print('未输入路径，退出。')
+            print('No path entered, exiting.')
             sys.exit(0)
 
     if not os.path.exists(model_arg):   # 路径校验：不存在则报错退出
-        print(f'[错误] 权重路径不存在: {model_arg}')
+        print(f'[error] weight path not found: {model_arg}')
         sys.exit(1)
     args.model = model_arg
 
@@ -184,10 +182,10 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     device, _ = detect_device(verbose=False)
-    print(f'设备: {device} | 权重: {args.model}')
+    print(f'Device: {device} | Weights: {args.model}')
 
     datasets = collect_datasets(args.datasets)
-    print(f'待评估数据集: {datasets}')
+    print(f'Datasets to evaluate: {datasets}')
 
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  第 5 步：逐个数据集评估（加载权重 → 前向 → K-means → 指标）            ║
@@ -195,19 +193,19 @@ if __name__ == '__main__':
     summary = []   # 每项: (数据集名, 权重文件名, 样本数, 视图数, acc, nmi, pur, ari, 评估用时秒)
     for name in datasets:
         print('\n' + '=' * 66)
-        print(f'  数据集: {name}')
+        print(f'  Dataset: {name}')
         print('=' * 66)
         weights = resolve_weights(args.model, name)          # 该数据集可用的全部权重（空则跳过）
         if not weights:
-            print(f'[跳过] 未找到 {name} 的权重文件（--model 为文件时请确认结构匹配）')
+            print(f'[skip] no weight file found for {name} (if --model is a file, check the structure matches)')
             summary.append((name, "—", None, None, None, None, None, None, None))
             continue
-        print(f'权重（共 {len(weights)} 份，按时间旧→新）:')
+        print(f'Weights ({len(weights)} files, old → new):')
         for w in weights:
             print(f'  - {w}')
 
         for weight_path in weights:
-            print(f'\n--- 评估权重: {os.path.basename(weight_path)} ---')
+            print(f'\n--- Evaluating weight: {os.path.basename(weight_path)} ---')
             t0 = time.perf_counter()                         # 本份权重评估计时起点
             try:
                 dataset = MATKind(name, "datasets")          # 加载数据集（与训练相同的归一化流程）
@@ -215,7 +213,7 @@ if __name__ == '__main__':
                 data_size = len(dataset)                     # 样本数
                 view = dataset.num_views                     # 视图数
                 dims = list(chain.from_iterable(dataset.dims.tolist()))  # 各视图维度
-                print(f'样本数={data_size}, 视图数={view}, 类别数={class_num}, 各视图维度={dims}')
+                print(f'samples={data_size}, views={view}, classes={class_num}, view dims={dims}')
 
                 model = Network(view, dims, args.feature_dim, args.high_feature_dim, device)
                 state_dict = torch.load(weight_path, map_location=device)
@@ -228,7 +226,7 @@ if __name__ == '__main__':
                 summary.append((name, os.path.basename(weight_path), data_size, view,
                                 acc, nmi, pur, ari, time.perf_counter() - t0))  # 记录指标与用时
             except Exception as e:
-                print(f'[错误] {name} 评估失败: {e}')
+                print(f'[error] evaluation of {name} failed: {e}')
                 summary.append((name, os.path.basename(weight_path),
                                 None, None, None, None, None, None, None))
 
@@ -236,7 +234,7 @@ if __name__ == '__main__':
     # ║  第 6 步：汇总 —— 每份权重一行（数据规模 + 指标 + 评估用时）            ║
     # ╚══════════════════════════════════════════════════════════════════════╝
     print('\n' + '=' * 66)
-    print('  汇总（晚期融合全局特征 Y，每份权重 = 一次独立实验）')
+    print('  Summary (late-fused global features Y; each weight = one independent run)')
     print('=' * 66)
     # 组装表格行：权重文件/样本数/视图数/四个指标/评估用时；评估失败用 "—" 占位
     table = []
@@ -247,9 +245,9 @@ if __name__ == '__main__':
         else:
             table.append([name, wname, "—", "—", "—", "—", "—", "—", "—"])
     print(tabulate(table,
-                   headers=["数据集", "权重文件", "样本数", "视图数", "ACC", "NMI", "PUR", "ARI", "评估用时"],
+                   headers=["Dataset", "Weight file", "Samples", "Views", "ACC", "NMI", "PUR", "ARI", "Time"],
                    tablefmt="grid", floatfmt=".2f"))
     # 总评估用时（所有权重合计）
     ok = [r for r in summary if r[8] is not None]
     if ok:
-        print(f'\n总评估用时（{len(ok)} 份权重合计）: {_fmt_duration(sum(r[8] for r in ok))}')
+        print(f'\nTotal evaluation time ({len(ok)} weights): {_fmt_duration(sum(r[8] for r in ok))}')

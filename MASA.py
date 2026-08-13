@@ -171,7 +171,6 @@ class Network(nn.Module):
         """
         # AVE：探测各视图稀疏率（自适应稀疏约束的先验）
         means = [mean for mean, _ in zero_value_proportion(xs).values()]
-        print(f'Sparsity ratio(zero(missing)_value(dims)_proportion mean)[view]:{means}')
 
         # 早期融合：拼接输入 -> 全局编码器
         xs2one = torch.cat([xs[key] for key in sorted(xs.keys())], dim=1)
@@ -188,7 +187,6 @@ class Network(nn.Module):
         # ELMC：视图权重（早期融合全局流形作锚点 -> 晚期融合校准）
         Wz_view = manifold_alignment_weights(zs, z_all)  # sigma=None → 全局距离中位数
         Wz = Wz_view.repeat(z_all.shape[0], 1).to(self.device)
-        print(f'Wz_view:{Wz_view}')
 
         # 各视图解码与公共信息投影
         xrs, rs = [], []

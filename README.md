@@ -12,6 +12,10 @@
 
 Welcome to the official implementation of **MASA** — a multi-view clustering framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), and calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), which quantifies the agreement between each view's local manifold and the early-fused global manifold.
 
+As a native Chinese speaker, researching means working in a language that is not my own. English never comes easily to me, and my writing still has much to improve. Writing a good paper is also a goal I keep working toward (´･ω･`). This code would not exist without the help I received along the way. I thank the supportive atmosphere of my lab and the generous sharing spirit of the open-source community. I am fortunate to stand on the shoulders of giants. Back then, I kept wishing there was a solid framework I could just pick up, test on, and improve. Now I hope to become one of those who help you, the one who comes after. The method itself may not be anything special. I feel that for a venue like this, finishing the paper is never the end of the work. The follow-up work, such as the open-source framework, deserves just as much care. This repository is my answer to that ( •̀ ω •́ )✧. I want it to be clean, clear, and inspiring to you. If you are working on multi-view clustering or unsupervised representation learning, I hope it saves you some time. Thank you for reading my paper and using my code. It is my honor. If it helps your research even a little, I will be very happy (●'◡'●).
+
+作为一个中文母语者，做研究意味着要用一门不属于自己的语言来工作。英语对我来说从来都不轻松，我的写作也还有很多不足之处需要改进。写一篇好论文，也是我一直在努力的目标 (´･ω･`)。这套代码能够完成，离不开一路上大家给予我的帮助，这要感谢实验室里互相帮助的氛围，感谢开源社区慷慨分享的氛围，我有幸站在了巨人的肩膀上。当时我就一直想要是有一个好的框架可以直接拿来测试改进就好了，现在我也想能成为其中之一去帮助后来的你。我的方法本身也许并不出色，我觉得对于这么好的期刊来说，写完论文绝不是一件工作的结束，后续工作比如开源框架同样值得用心做好。这个仓库就是我给出的答案 ( •̀ ω •́ )✧我希望它是干净的清晰的、能给你启发的。如果你也在做多视图聚类或者无监督表示学习，希望它能帮你省下一些时间。感谢你阅读我的论文，使用我的代码，这是我的荣幸。哪怕它对你的研究只有一点点帮助，我也会非常开心 (●'◡'●)。
+
 <details open><summary>📣 I also have other multi-view clustering projects that may interest you ✨.</summary><p>
 
 > [**SparseMVC: Probing Cross-view Sparsity Variations for Multi-view Clustering**](https://openreview.net/pdf?id=cvJvk6oYfC)<br>
@@ -66,6 +70,9 @@ python train.py
 
 - The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
 - Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics + view weights), `4.models/` (.pth weights), `5.tsne/` (t-SNE).
+- The terminal output is organized into labeled sections: `[Device]` (probed once at startup), then per dataset `[Data]` (dataset info), `[Hyperparams]` (config, once per round), `[Network]` (module structure with parameter counts and shares), and `[Train]` stage banners.
+- Each training stage shows a light-blue progress bar that refreshes in place; below it, every epoch reports the loss with its components (pre: `global_ae + view_ae`; con: `global_ae + view_ae + contrastive`), the probed sparsity ratios, and the ELMC view weights.
+- When a round finishes, the best weighted result (`Max metric: epoch...` with ACC/NMI/PUR/ARI) is printed, followed by one-line notices of where the log, curves, and metrics were saved. With `--iter > 1`, a final summary table lists every round's best metrics plus their mean and standard deviation.
 
 (2) To run the **evaluation** with a trained model:
 
@@ -94,6 +101,7 @@ MASA
     ├── metric.py                     # Metrics (ACC/NMI/PUR/ARI, K-means evaluation)
     ├── metric2csv.py                 # Metric CSV export
     ├── plot.py                       # Training curves & ELMC σ curve
+    ├── scripts.py                    # Shared utilities (seed/timing/formatting, model summary, progress bar format)
     └── tsne_visual.py                # t-SNE visualization (pdf+svg)
 ```
 
@@ -115,19 +123,25 @@ folder_path = "datasets"
 ### 2.2 Hyperparameters
 
 ```py
+# Dataset name (defaults to the current .mat file; keep the default, passing it manually desyncs log/model filenames)
+parser.add_argument('--dataset', default=Dataname)
+# Batch size (the runtime forces the full dataset size; NUSWIDEOBJ keeps 256)
+parser.add_argument('--batch_size', default=256, type=int)
+# Learning rate
+parser.add_argument("--learning_rate", type=float, default=0.0003)
 # Number of epochs for the AVE pretraining stage
 parser.add_argument("--pre_epochs", type=int, default=300)  # 300
 # Number of epochs for the consistency training stage (ELMC + GLDA)
 parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
-# Learning rate and weight decay
-parser.add_argument("--learning_rate", type=float, default=0.0003)
-parser.add_argument("--weight_decay", type=float, default=0.0)
 # Feature dimensions: larger for encoding (richer representations), smaller for the contrastive projection (confines the loss to a compact subspace, shielding the encoder from dimensional collapse).
 parser.add_argument("--feature_dim", type=int, default=64)       # view-specific features
 parser.add_argument("--high_feature_dim", type=int, default=20)  # compressed feature dimension
-# Random seed and number of runs
-parser.add_argument("--seed", type=int, default=0)
+# Random seed (fixed value for reproducible runs)
+parser.add_argument("--seed", type=int, default=42)
+# Number of runs; --iter > 1 perturbs the seed/lr deterministically each round
 parser.add_argument("--iter", type=int, default=1)
+# Weight decay (L2 penalty on the network weights, passed to the Adam optimizer to prevent overfitting; 0.0 disables it)
+parser.add_argument("--weight_decay", type=float, default=0.0)
 ```
 
 ### 2.3 Dataset Preprocessing

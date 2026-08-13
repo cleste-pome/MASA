@@ -99,15 +99,15 @@ def detect_device(verbose=True):
     # 环境变量强制指定（测试/CI/服务器场景）
     override = (os.environ.get("MASA_DEVICE", "auto") or "auto").strip().lower()
     if override not in ("auto", "cuda", "mps", "cpu"):
-        print(f"[device_check] 忽略未知 MASA_DEVICE={override!r}（可选值：auto/cuda/mps/cpu）")
+        print(f"[device_check] ignoring unknown MASA_DEVICE={override!r} (options: auto/cuda/mps/cpu)")
         override = "auto"
 
     if override != "auto":
         if override == "cuda" and not torch.cuda.is_available():
-            print("[device_check] MASA_DEVICE=cuda 不可用（无 CUDA），回退到自动决策")
+            print("[device_check] MASA_DEVICE=cuda unavailable (no CUDA), falling back to auto")
             override = "auto"
         elif override == "mps" and not info["mps"]["available"]:
-            print("[device_check] MASA_DEVICE=mps 不可用，回退到自动决策")
+            print("[device_check] MASA_DEVICE=mps unavailable, falling back to auto")
             override = "auto"
 
     if override != "auto":
@@ -123,44 +123,42 @@ def detect_device(verbose=True):
 
 
 def print_device_summary(info):
-    """打印设备探测汇总"""
+    """打印设备探测汇总（紧凑信息块，分隔线包裹，与训练分区排版一致）"""
     p = info["platform"]
-    print("\n[device_check] ====== 设备前置检查 ======")
-    if p["is_mac"] and p["mac_model"]:
-        print(f"[device_check] 平台 : macOS {p['os_release']}（{p['arch']}）{p['mac_model']}  ← 识别为 Mac，优先启用 MPS")
-    else:
-        print(f"[device_check] 平台 : {p['os']} {p['os_release']}（{p['arch']}）")
-    print(f"[device_check] CPU  : {p['cpus']} 核 | Python {p['python']} | torch {info['torch']}")
+    platform = (f"macOS {p['os_release']} ({p['arch']}) {p['mac_model']} <- Mac detected, MPS preferred"
+                if p["is_mac"] and p["mac_model"]
+                else f"{p['os']} {p['os_release']} ({p['arch']})")
 
     cuda = info["cuda"]
-    if cuda:
-        print(f"[device_check] CUDA : 可用 ×{cuda['count']} → {', '.join(cuda['names'])}")
-    else:
-        print("[device_check] CUDA : 不可用")
-
+    cuda_txt = f"available x{cuda['count']} ({', '.join(cuda['names'])})" if cuda else "unavailable"
     mps = info["mps"]
     if mps["available"]:
-        print("[device_check] MPS  : 可用")
+        mps_txt = "available"
     elif mps["built"]:
-        print("[device_check] MPS  : 不可用（torch 已编译 MPS 但环境不满足，请确认 macOS ≥12.3）")
+        mps_txt = "unavailable (torch built with MPS but environment missing; check macOS >=12.3)"
     else:
-        print("[device_check] MPS  : 不可用（当前 torch 未编译 MPS 支持）")
+        mps_txt = "unavailable (current torch built without MPS support)"
 
     dev = info["device"]
-    note = "（由 MASA_DEVICE 强制指定）" if info["forced"] else (
-        "（Mac 设备，优先启用 MPS）" if dev.type == "mps" else "")
-    print(f"[device_check] 决策 : {dev}" + (f" {note}" if note else ""))
+    note = "(forced by MASA_DEVICE)" if info["forced"] else (
+        "(Mac device, MPS preferred)" if dev.type == "mps" else "")
+
+    print("-" * 72)
+    print(f"[Device] {platform}")
+    print(f"  python = {p['python']}    torch = {info['torch']}    cpu cores = {p['cpus']}")
+    print(f"  cuda = {cuda_txt}    mps = {mps_txt}")
+    print(f"  decision = {dev}" + (f" {note}" if note else ""))
     if dev.type == "mps":
-        print("[device_check] 提示 : MPS 下 torch.cdist/diag 等未实现算子已由 GlobalLocalManifoldCalibration 自动回退 CPU")
+        print("  note = MPS-unsupported ops (torch.cdist/diag) are handled by GlobalLocalManifoldCalibration with automatic CPU fallback")
     if dev.type == "cpu" and p["is_mac"]:
-        print("[device_check] 提示 : MPS 不可用？请确认 macOS ≥12.3 且 PyTorch 为官方版本")
-    print("[device_check] " + "-" * 40)
+        print("  note = MPS unavailable? check macOS >=12.3 and official PyTorch build")
+    print("-" * 72)
 
 
 def main():
     """独立运行入口：只做设备检查并打印，不启动训练"""
     device, _ = detect_device(verbose=True)
-    print(f"[device_check] 最终使用设备：{device}")
+    print(f"Final device: {device}")
     return 0
 
 

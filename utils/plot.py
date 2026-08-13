@@ -63,8 +63,6 @@ def plot_loss(imgs_path, loss_list, dataset_name, name, total_epochs=None):
     # 自动关闭窗口
     plt.close()
 
-    print(f'Plot saved as {imgs_path}/{dataset_name}_ep{total}_{name}.png')
-
 
 # 定义绘制准确率曲线的函数，参数acc_list为各轮训练的准确率列表
 def plot_acc(imgs_path, acc_list, dataset_name, name, x_values=None, pre_epochs=None):
@@ -197,8 +195,6 @@ def plot_acc(imgs_path, acc_list, dataset_name, name, x_values=None, pre_epochs=
     plt.pause(2)
     # 自动关闭窗口
     plt.close()
-    # 打印保存的图表文件名
-    print(f'Plot saved as {filename}')
 
 
 # 2x2 四宫格汇总图：ACC / NMI / PUR / ARI 各占一格，每格曲线用指标对应颜色
@@ -330,7 +326,6 @@ def plot_acc_summary(imgs_path, metrics_dict, dataset_name, x_values=None, pre_e
     plt.show(block=False)
     plt.pause(2)
     plt.close()
-    print(f'Plot saved as {filename}')
 
 
 # 定义绘制 ELMC σ 变化曲线的函数（仅非 fixed 模式时有数据）
@@ -382,5 +377,3 @@ def plot_sigma(sigma_history, imgs_path, dataset_name):
     plt.pause(2)
     # 自动关闭窗口
     plt.close()
-
-    print(f'Plot saved as {filename}')

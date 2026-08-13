@@ -6,6 +6,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import v_measure_score, adjusted_rand_score, accuracy_score
 from tabulate import tabulate  # 格式化表格输出
 from torch.utils.data import DataLoader
+from tqdm import tqdm  # 训练中进度条存在时用 tqdm.write 打印，避免打断进度条
 
 
 # ===================== 工具函数部分 =====================
@@ -59,10 +60,9 @@ def evaluate(y_true, y_pred):
     }
 
 
-# 打印表格工具函数（便于直观展示聚类结果）
+# 打印表格工具函数（便于直观展示聚类结果；标题与表格一次写入，避免进度条重绘插进表格中间）
 def print_table(data, headers, title):
-    print(f"\n{title}")
-    print(tabulate(data, headers=headers, tablefmt="grid", floatfmt=".4f"))
+    tqdm.write(f"\n{title}\n" + tabulate(data, headers=headers, tablefmt="grid", floatfmt=".4f"))
 
 
 # ===================== 验证函数部分 =====================
@@ -99,7 +99,6 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
     if pre_train:
         zs_results = []  # 保存 zs 的聚类结果
 
-        print("\nPre-train: The Sparse Autoencoder with Adaptive Encoding (SAA)")
         for v in range(view):
             # 对每个视图的低级特征 zs[v] 进行 k-means 聚类
             metrics = evaluate(labels, KMeans(n_clusters=class_num, n_init=100).fit_predict(zs[v].cpu().numpy()))
@@ -110,16 +109,16 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
         zs_results.append(
             ["Global", z_all_metrics["acc"], z_all_metrics["nmi"], z_all_metrics["ari"], z_all_metrics["purity"]])
 
-        # 打印低级特征聚类结果表格
+        # 打印低级特征聚类结果表格（阶段标题 + 表格标题 + 表格一次写入）
         print_table(zs_results, headers=[f"Feature", "ACC", "NMI", "ARI", "Purity"],
-                    title="Early-fused Feature Clustering")
+                    title="Pre-train: The Sparse Autoencoder with Adaptive Encoding (SAA)\n"
+                          "Early-fused Feature Clustering")
         return z_all_metrics["acc"], z_all_metrics["nmi"], z_all_metrics["purity"], z_all_metrics["ari"], zs_results,
 
     # ===================== 一致性训练阶段 =====================
     if con_train:
         rs_results = []  # 保存 rs 的聚类结果
 
-        print("\nCon-train: SAA+CSR+CDA")
         for v in range(view):
             # 对每个视图的一致性特征 rs[v] 进行 k-means 聚类
             metrics = evaluate(labels, KMeans(n_clusters=class_num, n_init=100).fit_predict(rs[v].cpu().numpy()))
@@ -130,8 +129,8 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
         rs_results.append(["Global (Y)", global_metrics["acc"], global_metrics["nmi"], global_metrics["ari"],
                            global_metrics["purity"]])
 
-        # 打印一致性特征聚类结果表格
+        # 打印一致性特征聚类结果表格（阶段标题 + 表格标题 + 表格一次写入）
         print_table(rs_results, headers=["Feature", "ACC", "NMI", "ARI", "Purity"],
-                    title="Late-fused Feature Clustering")
+                    title="Con-train: SAA+CSR+CDA\nLate-fused Feature Clustering")
         return global_metrics["acc"], global_metrics["nmi"], global_metrics["purity"], global_metrics["ari"], rs_results
     return None

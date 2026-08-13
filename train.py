@@ -18,8 +18,6 @@ import gc
 import os
 import random
 import time
-import warnings
-from contextlib import contextmanager
 from datetime import datetime
 from itertools import chain
 
@@ -39,112 +37,33 @@ from utils import Logger
 from utils.count_datasetY import count_classes
 from utils.dataloader import MATKind
 from utils.device_check import detect_device
-from utils.metric2csv import save_lists_to_file, find_max_weighted_sum_index, find_max_last_element_index, create_csv, \
+from utils.metric2csv import save_lists_to_file, find_max_weighted_sum_index, create_csv, \
     save_results_to_csv, save_wz_view_to_csv
 from utils.plot import plot_acc, plot_acc_summary, plot_loss, plot_sigma
 from utils.tsne_visual import plot_embeddings, plot_svg_embeddings
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"  # 设置OMP_NUM_THREADS环境变量
-print(f'1.torch version:{torch.__version__} 2.cuda available:{torch.cuda.is_available()}')
-warnings.filterwarnings("ignore", message="KMeans is known to have a memory leak")
-warnings.filterwarnings("ignore", category=FutureWarning)
+
+from utils.scripts import PLOT_SIGMA, setup_seed, timing_secs, measure, print_model_summary, \
+    print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list
 
 
-def setup_seed(Seed):
-    torch.manual_seed(Seed)  # 为CPU设置随机种子
-    torch.cuda.manual_seed_all(Seed)  # 为所有GPU设置随机种子
-    np.random.seed(Seed)  # 为NumPy设置随机种子
-    random.seed(Seed)  # 为Python标准库的random模块设置随机种子
-    torch.backends.deterministic = True  # 确保CUDA的确定性（即每次运行结果一致）
+def _log_file_only(logger, text):
+    """只写日志文件、不打印终端（结果字典等长篇记录）；返回日志路径供终端一句提示"""
+    for handler in logger.handlers:
+        path = getattr(handler, "baseFilename", None)
+        if path:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
+            return path
+    return None
 
 
-# ===================== 运行分段计时（训练结束统一打印/记录） =====================
-timing_secs = {}  # 分段名 -> 累计秒数（跨数据集、跨 iter 轮次累加）
-
-
-@contextmanager
-def measure(section):
-    """with measure('段名'): 自动把整段耗时（秒）累加到 timing_secs['段名']，可重复累加。
-    用于记录各阶段运行时间：数据加载/模型构建/预训练/一致性训练/验证/绘图等。"""
-    t0 = time.perf_counter()
-    try:
-        yield
-    finally:
-        timing_secs[section] = timing_secs.get(section, 0.0) + time.perf_counter() - t0
-
-
-def _fmt_duration(seconds):
-    """秒数 → 可读文本（不足 1 分钟显示秒，超过显示 分/时）"""
-    seconds = max(0.0, seconds)
-    if seconds < 60:
-        return f"{seconds:.2f} s"
-    minutes, sec = divmod(seconds, 60)
-    if minutes < 60:
-        return f"{int(minutes)} min {sec:.1f} s"
-    hours, minutes = divmod(minutes, 60)
-    return f"{int(hours)} h {int(minutes)} min {sec:.1f} s"
-
-
-def _fmt_duration_compact(seconds):
-    """秒数 → 表格用紧凑文本（2.4s / 29m18s / 1h42m）"""
-    seconds = max(0.0, seconds)
-    if seconds < 60:
-        return f"{seconds:.1f}s"
-    minutes, sec = divmod(seconds, 60)
-    if minutes < 60:
-        return f"{int(minutes)}m{int(sec)}s"
-    hours, minutes = divmod(minutes, 60)
-    return f"{int(hours)}h{int(minutes)}m"
-
-
-def print_timing_report(logger=None):
-    """训练结束时打印运行时间报告（表格形式，按数据集分组），并同步写入日志文件记录。
-
-    说明：验证(KMeans)/t-SNE 是阶段（预训练/一致性训练）内部的细分项，已包含在所属
-    阶段耗时中，单独列出便于定位瓶颈；极小未细分开销未计入。"""
-    lines = ["=" * 60, "运行时间报告（分段计时）", "=" * 60]
-    lines.append(f"总耗时（所有数据集合计）: {_fmt_duration(timing_secs.get('总耗时', 0.0))}"
-                 + (f" ｜ 设备检查与启动: {_fmt_duration(timing_secs['设备检查与启动'])}"
-                    if "设备检查与启动" in timing_secs else ""))
-    phases = ("数据加载与预处理", "模型构建", "预训练", "一致性训练", "出图与保存")
-    headers = ["数据集", "数据加载", "模型构建", "预训练", "一致性训练",
-               "其中: 验证", "其中: t-SNE", "出图保存", "阶段合计"]
-    rows = []
-    datasets = sorted({k.split(':')[0] for k in timing_secs if ':' in k})
-    for d in datasets:
-        rows.append([
-            d,
-            _fmt_duration_compact(timing_secs.get(f"{d}: 数据加载与预处理", 0.0)),
-            _fmt_duration_compact(timing_secs.get(f"{d}: 模型构建", 0.0)),
-            _fmt_duration_compact(timing_secs.get(f"{d}: 预训练", 0.0)),
-            _fmt_duration_compact(timing_secs.get(f"{d}: 一致性训练", 0.0)),
-            _fmt_duration_compact(timing_secs.get(f"{d}: 验证评估(KMeans)", 0.0)),
-            _fmt_duration_compact(timing_secs.get(f"{d}: t-SNE 可视化", 0.0)),
-            _fmt_duration_compact(timing_secs.get(f"{d}: 出图与保存", 0.0)),
-            _fmt_duration_compact(sum(timing_secs.get(f"{d}: {p}", 0.0) for p in phases)),
-        ])
-    if rows:
-        lines.append(tabulate(rows, headers=headers, tablefmt="grid"))
-    lines.append("注: 验证(KMeans)/t-SNE 为阶段内部细分项，已含在预训练/一致性训练耗时内，单列便于定位瓶颈。")
-    lines.append("=" * 60)
-    text = "\n".join(lines)
-    print(text)  # 控制台只打印一次
-    if logger is not None:
-        # 直接写入当前数据集的日志文件（不走 logger.info，避免控制台重复输出）
-        for handler in logger.handlers:
-            report_path = getattr(handler, "baseFilename", None)
-            if report_path:
-                try:
-                    with open(report_path, "a", encoding="utf-8") as f:
-                        f.write(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 运行时间报告\n{text}\n")
-                except OSError:
-                    pass
-                break
-
-
-def pretrain(Epoch, Dataset_name, current_time):
+def pretrain(Epoch, Dataset_name, current_time, pbar=None):
     tot_loss = 0.  # 初始化总损失
+    tot_global_ae = 0.  # 全局 AE（重建+稀疏）分量累计
+    tot_view_ae = 0.  # 各视图 AE（重建+稀疏）分量累计
     loss_list = []  # 用于存储每个视角的损失
     # 遍历数据集，enumerate用于获取批次索引和数据
     for batch_idx, (xs, gnd, _) in enumerate(data_loader):
@@ -153,14 +72,14 @@ def pretrain(Epoch, Dataset_name, current_time):
         # 将所有视角的数据拼接在一起，形成一个大的张量，用于计算整体的重建误差
         xs2one = torch.cat(xs_dict2tensors, dim=1)
         if Epoch == 0:
-            with measure(f"{Dataset_name}: t-SNE 可视化"):
+            with measure(f"{Dataset_name}: t-SNE visualization"):
                 embeddings = TSNE(n_components=2, init='pca', random_state=42).fit_transform(
                     xs2one.detach().cpu())  # TODO tensor
                 fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
                                               Dataset_name)  # TODO plot t-sne svg
                 fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
                                       Dataset_name)  # TODO plot t-sne pdf
-                print(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
+                tqdm.write(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
         # 将每个视角的数据移动到指定设备上（例如，GPU），以便加速计算
         for v in range(view):
             xs[v] = xs[v].to(device)
@@ -176,13 +95,13 @@ def pretrain(Epoch, Dataset_name, current_time):
             ae_loss_function(mean_average, xs2one.to(device), xr_all.to(device), activation[0], rho=0.05, beta=1.0))
         # if Epoch == 299:
         if (Epoch + 1) % 100 == 0:
-            with measure(f"{Dataset_name}: t-SNE 可视化"):
+            with measure(f"{Dataset_name}: t-SNE visualization"):
                 embeddings = TSNE(n_components=2, init='pca', random_state=42).fit_transform(
                     z_all.detach().cpu())  # TODO 绘制前期融合编码后的全局矩阵
                 fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
                                               Dataset_name + f'_EarlyFusion')
                 fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch, Dataset_name + f'_EarlyFusion')
-                print(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
+                tqdm.write(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
 
         # TODO pre 2 局部视角
         for v in range(view):
@@ -203,22 +122,37 @@ def pretrain(Epoch, Dataset_name, current_time):
         loss.backward()
         # 使用优化器更新模型参数
         optimizer.step()
-        # 累加损失，用于计算当前Epoch的平均损失
+        # 累加损失，用于计算当前Epoch的平均损失（loss_list[0]=全局 AE，其余=各视图 AE）
         tot_loss += loss.item()
-    # 计算并打印当前轮次的平均损失
+        tot_global_ae += loss_list[0].item()
+        tot_view_ae += sum(loss_list[1:]).item()
+    # 计算当前轮次的平均损失与各分量，详情另起行打印（进度条下方滚动，条本身保持干净）
     pretrain_loss = tot_loss / len(data_loader)
-    print('Pre Epochs[{}]'.format(Epoch + 1), 'Loss:{:.6f}'.format(pretrain_loss))
+    global_ae = tot_global_ae / len(data_loader)
+    view_ae = tot_view_ae / len(data_loader)
+    breakdown = f"loss = {pretrain_loss:.4f} (global_ae {global_ae:.4f} + view_ae {view_ae:.4f})"
+    if pbar is not None:
+        tqdm.write(breakdown)
+        tqdm.write(f"  | sparsity {_fmt_ratio_list(means)}")
+        tqdm.write(f"  | view weights {_fmt_ratio_list(wz_view.tolist(), 3)}")
+    else:
+        print(f'Pre  Epoch [{Epoch + 1}] {breakdown}')
+        print(f'     | sparsity {_fmt_ratio_list(means)}')
+        print(f'     | view weights {_fmt_ratio_list(wz_view.tolist(), 3)}')
     # 返回当前轮次的平均损失和每个视角的权重
     return pretrain_loss
 
 
-def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time):
+def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time, pbar=None):
     """
     CVDA：基于对比的视图级分布对齐训练过程
     :param Epoch: 当前的训练轮次
     Plot_SDD： 我发明的维度分布蜡烛图:D文章还在写（鸽子咕咕咕）
     """
     tot_loss = 0.  # 初始化总损失
+    tot_global_ae = 0.  # 全局 AE（重建+稀疏）分量累计
+    tot_view_ae = 0.  # 各视图 AE（重建+稀疏）分量累计
+    tot_con = 0.  # 各视图对比损失分量累计
     for batch_idx, (xs, gnd, _) in enumerate(data_loader):  # 遍历数据集
         for v in range(view):
             xs[v] = xs[v].to(device)  # 将数据移动到指定设备（如GPU）
@@ -260,9 +194,24 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time)
         loss = sum(loss_list)  # 汇总所有视角的损失
         loss.backward()  # 反向传播计算梯度
         optimizer.step()  # 更新模型参数
+        # 分量累计：loss_list[0]=全局 AE，奇数位=各视图 AE，偶数位=各视图对比损失
         tot_loss += loss.item()  # 累加损失
+        tot_global_ae += loss_list[0].item()
+        tot_view_ae += sum(loss_list[1::2]).item()
+        tot_con += sum(loss_list[2::2]).item()
     con_loss = tot_loss / len(data_loader)
-    print('Con Epochs[{}/{}]'.format(Epoch + 1, Total_epochs), 'Loss:{:.6f}'.format(con_loss))  # 输出当前轮次的平均损失
+    global_ae = tot_global_ae / len(data_loader)
+    view_ae = tot_view_ae / len(data_loader)
+    con = tot_con / len(data_loader)
+    breakdown = f"loss = {con_loss:.4f} (global_ae {global_ae:.4f} + view_ae {view_ae:.4f} + contrastive {con:.4f})"
+    if pbar is not None:
+        tqdm.write(breakdown)
+        tqdm.write(f"  | sparsity {_fmt_ratio_list(means)}")
+        tqdm.write(f"  | view weights {_fmt_ratio_list(wz_view.tolist(), 3)}")
+    else:
+        print(f'Con  Epoch [{Epoch + 1}/{Total_epochs}] {breakdown}')
+        print(f'     | sparsity {_fmt_ratio_list(means)}')
+        print(f'     | view weights {_fmt_ratio_list(wz_view.tolist(), 3)}')
     return con_loss
 
 
@@ -272,16 +221,14 @@ if __name__ == '__main__':
     # 只遍历 .mat 数据集文件（过滤 .DS_Store 等无关文件，保证 data_iter 序号连续）
     file_names = [f for f in os.listdir(folder_path) if f.endswith(".mat")]
     # 设备前置检查：运行前探测环境并决定 CUDA/MPS/CPU 配置（可用 MASA_DEVICE 环境变量强制指定）
-    with measure("设备检查与启动"):
+    with measure("Device check & startup"):
         device, _ = detect_device()
     t_start_all = time.perf_counter()  # 总计时起点（含全部数据集，不含 torch import）
     logger = None  # 数据集循环内会赋值，供结尾计时报告写入日志
     data_iter = 1  # 数据集位次
-    for Dataname in tqdm(file_names):
+    for Dataname in file_names:
         if Dataname.endswith(".mat"):
             Dataname = Dataname[:-4]
-            print(
-                f'---------------------------------------{Dataname}[{data_iter}]---------------------------------------')
             parser = argparse.ArgumentParser(description='train')
             parser.add_argument('--dataset', default=Dataname)
             # 超参数
@@ -289,10 +236,10 @@ if __name__ == '__main__':
             parser.add_argument("--learning_rate", type=float, default=0.0003)
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
             parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
-            parser.add_argument("--iter", type=int, default=1)
             parser.add_argument("--feature_dim", type=int, default=64)
             parser.add_argument("--high_feature_dim", type=int, default=20)
-            parser.add_argument("--seed", type=int, default=0)
+            parser.add_argument("--seed", type=int, default=42)
+            parser.add_argument("--iter", type=int, default=1)
             parser.add_argument("--weight_decay", type=float, default=0.0)
             # TODO 选取noise ratio比例的样本，随机(1到view-1)个视图做添加高斯噪声处理
             parser.add_argument('--noise_ratio', type=float, default=0.0)
@@ -302,7 +249,6 @@ if __name__ == '__main__':
             parser.add_argument('--missing_ratio', type=float, default=0.0)
             # TODO 选取sparsity ratio比例维度的随机(1到dims-1)个维度做置0处理
             parser.add_argument('--sparsity_ratio', type=float, default=0.0)
-            parser.add_argument("--plot_sigma", action="store_true", help="ELMC σ curve")
             args = parser.parse_args()
             # TODO log创建
             log_path = f'1.logs'
@@ -312,7 +258,7 @@ if __name__ == '__main__':
             # 数据集级时间戳：本数据集所有输出（日志/曲线/指标/权重/可视化）命名统一
             current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
             logger = Logger.get_logger(__file__, Dataname, data_ratio, current_time)
-            with measure(f"{Dataname}: 数据加载与预处理"):
+            with measure(f"{Dataname}: Data load & preprocessing"):
                 dataset = MATKind(args.dataset, folder_path)
                 count_classes(Dataname, dataset.Y)  # TODO 统计类别数量分布情况（是否长尾分布）
 
@@ -324,8 +270,10 @@ if __name__ == '__main__':
                 view = dataset.num_views
                 # 获取每个视图的维度
                 dims = list(chain.from_iterable(dataset.dims.tolist()))
-                print(
-                    f'dataset information: 1. number of data: {data_size}, 2.views: {view}, 3.clusters: {class_num}, 4.each view: {dims}')
+                print(f"\n[Data] Dataset info")
+                print(f"  {_kv('samples', data_size)}{_kv('views', view)}{_kv('classes', class_num)}")
+                print(f"  {_kv('view dims', str(dims))}")
+                print("-" * 72)
 
                 index = np.arange(data_size)
                 np.random.shuffle(index)
@@ -350,12 +298,21 @@ if __name__ == '__main__':
                 os.makedirs(f'./{pth_path}')
             acc_l, nmi_l, pur_l, ari_l, seed_l, lr_l, loss_l = [], [], [], [], [], [], []
             T = args.iter  # 循环测试次数，用于获取更准确地评价指标（平均值和方差）
-            seed = args.seed
+            seed = args.seed  # 首轮用 --seed 固定值；--iter > 1 时每轮末尾随机扰动，种子序列确定可复现
             lr = args.learning_rate
             imgs_path = f'2.results_imgs/{Dataname}_{current_time}'
             reset_sigma_history()  # σ 历史按数据集清零（曲线按数据集分开画，非 fixed 模式才有数据）
             for i in range(T):
-                print(f"ROUND:{i + 1}[seed:{seed}][learning rate:{lr}]")
+                print(f"\n[Hyperparams] Config (ROUND {i + 1}/{T})")
+                print(f"  {_kv('seed', seed)}{_kv('lr', lr)}{_kv('iter', args.iter)}")
+                print(f"  {_kv('batch_size', args.batch_size)}{_kv('pre_epochs', args.pre_epochs)}"
+                      f"{_kv('con_epochs', args.con_epochs)}")
+                print(f"  {_kv('feature_dim', args.feature_dim)}{_kv('high_feature_dim', args.high_feature_dim)}"
+                      f"{_kv('weight_decay', args.weight_decay)}")
+                print(f"  {_kv('noise', args.noise_ratio)}{_kv('conflict', args.conflict_ratio)}"
+                      f"{_kv('missing', args.missing_ratio)}")
+                print(f"  {_kv('sparsity', args.sparsity_ratio)}")
+                print("-" * 72)
                 # 确定本次循环测试的随机数种子：1.固定每次结果 2.保证不同次结果不同
                 setup_seed(seed)
                 seed_l.append(seed)
@@ -364,9 +321,10 @@ if __name__ == '__main__':
                 acc_list, nmi_list, pur_list, ari_list, preloss_list, conloss_list = [], [], [], [], [], []
                 epoch_ticks = []  # 每个评价点对应的真实 epoch（pre 后接 con 续算，出图横坐标用）
                 # TODO 重点来了੭ ᐕ)੭: model
-                with measure(f"{Dataname}: 模型构建"):
+                with measure(f"{Dataname}: Model construction"):
                     model = Network(view, dims, args.feature_dim, args.high_feature_dim, device)
-                    print(model)
+                    if i == 0:
+                        print_model_summary(model)  # 网络结构每个数据集只打印一次（各轮结构相同）
                     model = model.to(device)
                     state = model.state_dict()
                     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=args.weight_decay)
@@ -379,18 +337,21 @@ if __name__ == '__main__':
                 # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好设置为1
                 if data_size >= 2500:  # large
                     args.con_epochs = 600  # small/large 300/600
-                    pre_check_num = 10
+                    pre_check_num = 100
                     valid_check_num = 10
                 else:  # small
                     pre_check_num = 10
                     valid_check_num = 1
 
-                with measure(f"{Dataname}: 预训练"):
-                    for epoch in tqdm(range(args.pre_epochs)):
-                        preloss = pretrain(epoch, Dataname, current_time)  # 1.pre-train
+                with measure(f"{Dataname}: Pretraining"):
+                    print(f'---------------------------------------{Dataname}[{data_iter}]---------------------------------------')
+                    print(f"\n[Train] Pretrain stage ({args.pre_epochs} epochs)")
+                    pbar = tqdm(total=args.pre_epochs, desc="Pretrain", unit="epoch", bar_format=BAR_FORMAT)
+                    for epoch in range(args.pre_epochs):
+                        preloss = pretrain(epoch, Dataname, current_time, pbar)  # 1.pre-train
                         preloss_list.append(preloss)
                         if (epoch + 1) % pre_check_num == 0:  # TODO pre_check_num 1. pre
-                            with measure(f"{Dataname}: 验证评估(KMeans)"):
+                            with measure(f"{Dataname}: Validation (KMeans)"):
                                 acc, nmi, pur, ari, zs_Results = valid(model, device, dataset, view, data_size,
                                                                        class_num, pre_train=True,
                                                                        con_train=False)
@@ -401,20 +362,24 @@ if __name__ == '__main__':
                             nmi_list.append(nmi)
                             pur_list.append(pur)
                             ari_list.append(ari)
+                        pbar.update(1)
+                    pbar.close()
                 plot_loss(imgs_path, preloss_list, Dataname, 'pretrain_loss', args.pre_epochs + args.con_epochs)
 
-                with measure(f"{Dataname}: 一致性训练"):
-                    for epoch in tqdm(range(args.con_epochs)):
+                with measure(f"{Dataname}: Consistency training"):
+                    print(f"\n[Train] Consistency stage ({args.con_epochs} epochs)")
+                    pbar = tqdm(total=args.con_epochs, desc="Consistency", unit="epoch", bar_format=BAR_FORMAT)
+                    for epoch in range(args.con_epochs):
                         epoch = args.pre_epochs + epoch
                         plot_SDD = False
                         total_epochs = args.pre_epochs + args.con_epochs
                         if epoch + 1 == total_epochs:
                             plot_SDD = True
-                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)  # 2.contrastive train
+                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time, pbar)  # 2.contrastive train
                         conloss_list.append(conloss)
                         # TODO valid_check_num 2. con
                         if (epoch + 1) % valid_check_num == 0:  # TODO con
-                            with measure(f"{Dataname}: 验证评估(KMeans)"):
+                            with measure(f"{Dataname}: Validation (KMeans)"):
                                 acc, nmi, pur, ari, rs_Results = valid(model, device, dataset, view, data_size,
                                                                        class_num, pre_train=False,
                                                                        con_train=True)
@@ -427,6 +392,8 @@ if __name__ == '__main__':
                         max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
                                                                 acc_weight=0.25, nmi_weight=0.25,
                                                                 pur_weight=0.25, ari_weight=0.25)
+                        pbar.update(1)
+                    pbar.close()
                 plot_loss(imgs_path, conloss_list, Dataname, 'con_loss', args.pre_epochs + args.con_epochs)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
@@ -447,8 +414,8 @@ if __name__ == '__main__':
                         "ari": ari_list[-1],
                         "seed": seed,
                         "learning rate": lr}
-                # log save
-                logger.info(str(info))
+                # log save（只写日志文件，终端不显示字典；一句提示保存位置）
+                _log_file_only(logger, str(info))
                 del info
                 acc_l.append(acc_list)
                 nmi_l.append(nmi_list)
@@ -468,7 +435,29 @@ if __name__ == '__main__':
                         "ari": ari_list[max_index],
                         "seed": seed,
                         "learning rate": lr}
-                logger.info(str(info))
+                log_path_res = _log_file_only(logger, str(info))
+                print(f'Results saved to log: {log_path_res}')
+                # 本轮最优结果（加权 0.25×4 选出，与日志 MAX Epoch 记录一致）
+                print(f'Max metric: epoch{epoch_ticks[max_index]}\n'
+                      f'1.acc:{acc_list[max_index] * 100:.2f}%\n'
+                      f'2.nmi:{nmi_list[max_index] * 100:.2f}%\n'
+                      f'3.pur:{pur_list[max_index] * 100:.2f}%\n'
+                      f'4.ari:{ari_list[max_index] * 100:.2f}%')
+                # 本轮出图与保存：曲线/指标 CSV（单个文件不再逐条打印，一句提示目录位置）
+                with measure(f"{Dataname}: Plots & saving"):
+                    plot_acc(imgs_path, acc_list, Dataname, 'acc', epoch_ticks, args.pre_epochs)
+                    plot_acc(imgs_path, nmi_list, Dataname, 'nmi', epoch_ticks, args.pre_epochs)
+                    plot_acc(imgs_path, pur_list, Dataname, 'pur', epoch_ticks, args.pre_epochs)
+                    plot_acc(imgs_path, ari_list, Dataname, 'ari', epoch_ticks, args.pre_epochs)
+                    plot_acc_summary(imgs_path,
+                                     {'acc': acc_list, 'nmi': nmi_list, 'pur': pur_list, 'ari': ari_list},
+                                     Dataname, epoch_ticks, args.pre_epochs)
+                    save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, Dataname, data_ratio,
+                                       valid_check_num, current_time)
+                    # ELMC σ 变化曲线（默认不绘制，PLOT_SIGMA 置 True 开启；'fixed' 模式无历史数据自动跳过）
+                    if PLOT_SIGMA:
+                        plot_sigma(get_sigma_history(), imgs_path, Dataname)
+                    print(f'Curves saved to {imgs_path}')
                 offset1 = 100000
                 seed = int(abs(seed + random.uniform(-offset1, offset1)))
                 offset2 = 0.0001
@@ -476,38 +465,31 @@ if __name__ == '__main__':
                 lr = "{:.5f}".format(lr)
                 lr = float(lr)
                 del info
-            # TODO [一般是取平均值，但考虑到需求下面实现了取最大值:D] 找到 acc_l 中最后一个元素最大的列表元素的位次（默认训练一次，所以l_max=0）
-            with measure(f"{Dataname}: 出图与保存"):
-                l_max = find_max_last_element_index(acc_l)
-                acc_list, nmi_list, pur_list, ari_list, loss_list = acc_l[l_max], nmi_l[l_max], pur_l[l_max], ari_l[l_max], \
-                    loss_l[l_max]
-                max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
-                                                        acc_weight=0.25, nmi_weight=0.25,
-                                                        pur_weight=0.25, ari_weight=0.25)
-                plot_acc(imgs_path, acc_list, Dataname, 'acc', epoch_ticks, args.pre_epochs)
-                plot_acc(imgs_path, nmi_list, Dataname, 'nmi', epoch_ticks, args.pre_epochs)
-                plot_acc(imgs_path, pur_list, Dataname, 'pur', epoch_ticks, args.pre_epochs)
-                plot_acc(imgs_path, ari_list, Dataname, 'ari', epoch_ticks, args.pre_epochs)
-                plot_acc_summary(imgs_path,
-                                 {'acc': acc_list, 'nmi': nmi_list, 'pur': pur_list, 'ari': ari_list},
-                                 Dataname, epoch_ticks, args.pre_epochs)
-
-                save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, Dataname, data_ratio,
-                                   valid_check_num, current_time)
-                # ELMC σ 变化曲线（默认不绘制，--plot_sigma 开启；SIGMA_PRINT_ENABLED 关闭则无数据自动跳过）
-                if args.plot_sigma:
-                    plot_sigma(get_sigma_history(), imgs_path, Dataname)
-            print(f'Max metric: epoch{(max_index + 1) * valid_check_num}\n'
-                  f'1.acc:{acc_list[max_index] * 100:.2f}%\n'
-                  f'2.nmi:{nmi_list[max_index] * 100:.2f}%\n'
-                  f'3.pur:{pur_list[max_index] * 100:.2f}%\n'
-                  f'4.ari:{ari_list[max_index] * 100:.2f}%\n'
-                  f'5.best seed[{seed_l[l_max]}] & learning rate[{lr_l[l_max]}] for this dataset')
+            if T > 1:
+                # 多轮结果汇总表：每轮最优指标（加权 0.25/0.25/0.25/0.25）+ 均值/标准差
+                headers = ["ROUND", "seed", "lr", "ACC%", "NMI%", "PUR%", "ARI%"]
+                rows = []
+                bests = []  # 每轮最优 (acc, nmi, pur, ari) 百分比，用于最后算均值/标准差
+                for i in range(T):
+                    mi = find_max_weighted_sum_index(acc_l[i], nmi_l[i], pur_l[i], ari_l[i],
+                                                     acc_weight=0.25, nmi_weight=0.25,
+                                                     pur_weight=0.25, ari_weight=0.25)
+                    acc, nmi, pur, ari = acc_l[i][mi] * 100, nmi_l[i][mi] * 100, \
+                        pur_l[i][mi] * 100, ari_l[i][mi] * 100
+                    bests.append((acc, nmi, pur, ari))
+                    rows.append([i + 1, seed_l[i], lr_l[i],
+                                 f"{acc:.2f}", f"{nmi:.2f}", f"{pur:.2f}", f"{ari:.2f}"])
+                mean = [f"{np.mean([b[k] for b in bests]):.2f}" for k in range(4)]
+                std = [f"{np.std([b[k] for b in bests]):.2f}" for k in range(4)]
+                rows.append(["Mean", "", "", *mean])
+                rows.append(["Std", "", "", *std])
+                print(f"\n===== Multi-round summary (iter={T}; per-round best by weighted metrics) =====")
+                print(tabulate(rows, headers=headers, tablefmt="grid"))
             # 显式删除变量
             del dataset
             # 手动调用垃圾回收
             gc.collect()
         data_iter += 1
     # —— 全部数据集运行结束：记录并打印分段运行时间 ——
-    timing_secs["总耗时"] = time.perf_counter() - t_start_all
+    timing_secs["Total time"] = time.perf_counter() - t_start_all
     print_timing_report(logger)

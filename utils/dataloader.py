@@ -77,7 +77,8 @@ class MultiViewDataset(Dataset):
             views = random.sample(elements, length)  # 从该列表中随机选取views个不重复的元素
             for v in views:
                 self.X[v][i] = np.random.normal(self.X[v][i], sigma)
-        print(f'1. Add Noise completed: {ratio}]')
+        if ratio > 0:
+            print(f'1. Add Noise completed (ratio: {ratio})')
         pass
 
     def addConflict(self, index, ratio):
@@ -104,7 +105,8 @@ class MultiViewDataset(Dataset):
             # 修改当前选择的数据索引i的视图v的值，将其设置为当前数据的类别+1后的类别对应的视图值
             # 这里使用模运算保证类别编号是循环的（即如果当前类别是最后一个类别，+1后变成第一个类别）
             self.X[v][i] = records[(self.Y[i] + 1) % self.num_classes][v]
-        print(f'2. Add Conflict completed: {ratio}]')
+        if ratio > 0:
+            print(f'2. Add Conflict completed (ratio: {ratio})')
         pass
 
     def addMissing(self, index, ratio):
@@ -117,7 +119,8 @@ class MultiViewDataset(Dataset):
             views = random.sample(elements, length)  # 从该列表中随机选取views个不重复的元素
             for v in views:
                 self.X[v][i] = 0
-        print(f'3. Add Missing completed[ratio: {ratio}]')
+        if ratio > 0:
+            print(f'3. Add Missing completed (ratio: {ratio})')
         pass
 
     def addSparsity(self, index, ratio):
@@ -162,7 +165,8 @@ class MultiViewDataset(Dataset):
                         self.X[v][i][j] = 0
 
         # 输出稀疏添加完成的提示
-        print(f'4. Add Sparsity completed[ratio: {ratio}]')
+        if ratio > 0:
+            print(f'4. Add Sparsity completed (ratio: {ratio})')
 
 
 def MATKind(dataset_name, path):

@@ -28,17 +28,12 @@ SIGMA_QUANTILE = 0.1
 SIGMA_KNN_K = 5
 
 # σ 观测（仅供训练时观察）：σ 每轮从当前全局特征重算，随训练演化；
-# 每 _SIGMA_PRINT_INTERVAL 次调用打印一次当前值及相对上次打印的变化率；
 # 全部值记入 history，供训练结束时绘制 σ 变化曲线（仅非 fixed 模式有数据）
-_sigma_stats = {"count": 0, "prev": None, "history": []}
-_SIGMA_PRINT_INTERVAL = 50
-SIGMA_PRINT_ENABLED = True  # 周期打印开关：训练观察用；test.py 等单次评估场景已关闭
+_sigma_stats = {"history": []}
 
 
 def reset_sigma_history():
     """清空 σ 观测状态（train.py 每个数据集开始时调用，曲线按数据集分开展示）"""
-    _sigma_stats["count"] = 0
-    _sigma_stats["prev"] = None
     _sigma_stats["history"] = []
 
 
@@ -112,17 +107,9 @@ def manifold_alignment_weights(zs, z_all, sigma=None, device=None):
         else:
             raise ValueError(f"Unknown SIGMA_MODE: {SIGMA_MODE}")
 
-        # σ 观测：记入 history（供变化曲线）并周期打印（含相对上次打印的变化率）
+        # σ 观测：记入 history（供训练结束时绘制 σ 变化曲线）
         if SIGMA_MODE != 'fixed':
             _sigma_stats["history"].append(sigma)
-            _sigma_stats["count"] += 1
-            if SIGMA_PRINT_ENABLED and (_sigma_stats["count"] % _SIGMA_PRINT_INTERVAL == 0 or _sigma_stats["prev"] is None):
-                change = ""
-                if _sigma_stats["prev"] is not None:
-                    diff = sigma - _sigma_stats["prev"]
-                    change = f"（较上次打印 {'+' if diff >= 0 else ''}{diff / max(abs(_sigma_stats['prev']), 1e-12) * 100:.1f}%）"
-                print(f"[ELMC] 第{_sigma_stats['count']}次调用 σ({SIGMA_MODE}) = {sigma:.6f}{change}")
-                _sigma_stats["prev"] = sigma
 
     def laplacian_matrix(X, pairwise_distances=None):
         """计算拉普拉斯矩阵，适配 GPU 计算；pairwise_distances 为已算好的 X 全对距离（可复用）"""
