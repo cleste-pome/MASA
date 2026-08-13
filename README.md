@@ -1,4 +1,7 @@
-<p align="center"><b>English</b> | <a href="README_zh.md">中文</a></p>
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/English-0366d6?style=flat-square" alt="English"></a>
+  <a href="README_zh.md"><img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-lightgrey?style=flat-square" alt="中文"></a>
+</p>
 
 <div align="center">
 
