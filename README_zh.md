@@ -70,11 +70,9 @@ MASA 框架流程图。自适应视图专属编码（AVE）先探测每个视图
 python train.py
 ```
 
-- 设备自动选择（**CUDA > MPS > CPU**）；可用环境变量 `MASA_DEVICE=cuda|mps|cpu|auto` 强制指定设备。
-- 训练内置 K-means 评估；输出目录自动创建：`1.logs/`（日志）、`2.results_imgs/`（曲线）、`3.csv/`（指标 + 视图权重）、`4.models/`（.pth 权重）、`5.tsne/`（t-SNE）。
 - 终端输出分为几个区块：`[Device]`（启动时探测一次），然后每个数据集依次打印 `[Data]`（数据集信息）、`[Hyperparams]`（配置，每轮一次）、`[Network]`（模块结构、参数量与占比）、`[Train]` 阶段横幅。
 - 每个训练阶段都有一条淡蓝色进度条，原地刷新。进度条下方，每个 epoch 报告损失及其分量（pre：`global_ae + view_ae`；con：`global_ae + view_ae + contrastive`）、探测到的稀疏率与 ELMC 视图权重。
-- 每轮结束时打印加权最优结果（`Max metric: epoch...`，含 ACC/NMI/PUR/ARI），随后一行提示日志、曲线与指标的保存位置。`--iter > 1` 时，最后再输出一张汇总表：每轮的最优指标，以及它们的均值与标准差。
+- 每轮结束时输出一行提示，指明日志、曲线与指标的保存位置。`--iter > 1` 时，最后再输出一张汇总表：每轮的最优指标，以及它们的均值与标准差。
 
 (2) 用训练好的模型运行**评估**：
 

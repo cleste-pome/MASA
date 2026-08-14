@@ -223,7 +223,7 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time)
 
 if __name__ == '__main__':
     # loop in data
-    folder_path = "datasets"  # TODO 数据集文件夹地址
+    folder_path = f"datasets"  # TODO 数据集文件夹地址
     # 只遍历 .mat 数据集文件（过滤 .DS_Store 等无关文件，保证 data_iter 序号连续）
     file_names = [f for f in os.listdir(folder_path) if f.endswith(".mat")]
     # 设备前置检查：运行前探测环境并决定 CUDA/MPS/CPU 配置（可用 MASA_DEVICE 环境变量强制指定）

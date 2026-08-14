@@ -71,11 +71,9 @@ As a native Chinese speaker, researching means working in a language that is not
 python train.py
 ```
 
-- The device is selected automatically (**CUDA > MPS > CPU**); use the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` to force a specific device.
-- Training embeds K-means evaluation; output directories are created automatically: `1.logs/` (logs), `2.results_imgs/` (curves), `3.csv/` (metrics + view weights), `4.models/` (.pth weights), `5.tsne/` (t-SNE).
 - The terminal output is organized into labeled sections: `[Device]` (probed once at startup), then per dataset `[Data]` (dataset info), `[Hyperparams]` (config, once per round), `[Network]` (module structure with parameter counts and shares), and `[Train]` stage banners.
 - Each training stage shows a light-blue progress bar that refreshes in place; below it, every epoch reports the loss with its components (pre: `global_ae + view_ae`; con: `global_ae + view_ae + contrastive`), the probed sparsity ratios, and the ELMC view weights.
-- When a round finishes, the best weighted result (`Max metric: epoch...` with ACC/NMI/PUR/ARI) is printed, followed by one-line notices of where the log, curves, and metrics were saved. With `--iter > 1`, a final summary table lists every round's best metrics plus their mean and standard deviation.
+- When a round finishes, one-line notices point to where the log, curves, and metrics were saved. With `--iter > 1`, a final summary table lists every round's best metrics plus their mean and standard deviation.
 
 (2) To run the **evaluation** with a trained model:
 
