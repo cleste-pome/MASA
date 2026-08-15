@@ -2,7 +2,7 @@
 =====================================================================
  MASA 训练程序 (train.py)
 =====================================================================
-功能：自动遍历 datasets/ 下全部 .mat，逐个数据集完成两阶段训练 + 评估 + 出图。
+功能：自动遍历 datasets-/ 下全部 .mat，逐个数据集完成两阶段训练 + 评估 + 出图。
 
 【不需要你填写的】直接运行 python train.py 即可；所有超参数（轮数/学习率/
   特征维度等）在 main() 的 argparse 定义处均有默认值，需要调整时改那里
@@ -33,6 +33,7 @@ from loss import ContrastiveLoss, ae_loss_function
 from utils.metric import valid
 from MASA import Network
 from utils.GlobalLocalManifoldCalibration import reset_sigma_history, get_sigma_history
+from utils import GlobalLocalManifoldCalibration as GLMC  # 大数据集强制 SIGMA_MODE='fixed'（见 main 分支）
 from utils import Logger
 from utils.count_datasetY import count_classes
 from utils.dataloader import MATKind
@@ -240,7 +241,7 @@ if __name__ == '__main__':
             parser.add_argument('--batch_size', default=256, type=int)
             parser.add_argument("--learning_rate", type=float, default=0.0003)
             parser.add_argument("--pre_epochs", type=int, default=300)  # 300
-            parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
+            parser.add_argument("--con_epochs", type=int, default=300)  # 300/1000
             parser.add_argument("--feature_dim", type=int, default=64)
             parser.add_argument("--high_feature_dim", type=int, default=20)
             parser.add_argument("--seed", type=int, default=42)
@@ -341,12 +342,14 @@ if __name__ == '__main__':
 
                 # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好设置为1
                 if data_size >= 2500:  # large
-                    args.con_epochs = 600  # small/large 300/600
+                    args.con_epochs = 1000  # small/large 300/1000
                     pre_check_num = 100
                     valid_check_num = 10
+                    GLMC.SIGMA_MODE = 'fixed'  # 大数据集固定带宽，避免自适应 σ 每轮重算的开销
                 else:  # small
                     pre_check_num = 10
                     valid_check_num = 1
+                    GLMC.SIGMA_MODE = 'median'  # 小数据集恢复模块默认（全局距离中位数）
 
                 with measure(f"{Dataname}: Pretraining"):
                     print(f'---------------------------------------{Dataname}[{data_iter}]---------------------------------------')

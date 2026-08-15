@@ -78,7 +78,7 @@ python train.py
 (2) To run the **evaluation** with a trained model:
 
 ```shell
-python test.py --model 4.models --datasets ALOI-100
+python test.py --model 4.models --datasets- ALOI-100
 ```
 
 Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
@@ -91,7 +91,7 @@ MASA
 ├── test.py                           # Evaluation (load .pth + dataset → forward → K-means)
 ├── MASA.py                           # Model definition (Network: Encoder/Decoder, projection head, weighted fusion)
 ├── loss.py                           # Loss functions (contrastive + reconstruction/KL sparsity)
-├── datasets                          # Dataset directory (.mat: X view-cell array + Y labels)
+├── datasets-                          # Dataset directory (.mat: X view-cell array + Y labels)
 ├── docs                               # Figures used in this README
 └── utils                             # Utilities
     ├── count_datasetY.py             # Class distribution statistics & plots
@@ -116,7 +116,7 @@ The dataset folder and output directories are handled automatically; the device 
 
 ```py
 # Dataset folder path (all .mat files under it are trained in turn)
-folder_path = "datasets"
+folder_path = "datasets-"
 # Output directories are created at runtime:
 # 1.logs/ 2.results_imgs/ 3.csv/(Metrics, ViewWeights) 4.models/ 5.tsne/
 ```
@@ -133,7 +133,7 @@ parser.add_argument("--learning_rate", type=float, default=0.0003)
 # Number of epochs for the AVE pretraining stage
 parser.add_argument("--pre_epochs", type=int, default=300)  # 300
 # Number of epochs for the consistency training stage (ELMC + GLDA)
-parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
+parser.add_argument("--con_epochs", type=int, default=300)  # 300/1000
 # Feature dimensions: larger for encoding (richer representations), smaller for the contrastive projection (confines the loss to a compact subspace, shielding the encoder from dimensional collapse).
 parser.add_argument("--feature_dim", type=int, default=64)       # view-specific features
 parser.add_argument("--high_feature_dim", type=int, default=20)  # compressed feature dimension
@@ -191,8 +191,7 @@ contrastiveloss(H, rs[v], w2[v])
 ```
 
 Additionally, the **ELMC** module computes per-view fusion weights by Laplacian trace
-alignment with an adaptive bandwidth (default: the global pairwise-distance median). The
-score form and bandwidth setting can be switched at the top of
+alignment. The score form and bandwidth setting can be switched at the top of
 `utils/GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
 ablation tables.
 
@@ -208,7 +207,7 @@ MASA is a robust multi-view clustering framework built on three core modules and
 
 **① AVE — Adaptive View-specific Encoding** handles the cross-view sparsity heterogeneity typical of multi-view data: the sparsity ratio of each view is probed from its input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint — sparser views receive stronger sparse regularization, so that each view's encoder is tuned in a view-aware manner (adaptive sparse coefficient in `ae_loss_function`, `loss.py`).
 
-**② ELMC — Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, with an adaptive bandwidth (median heuristic, re-estimated every epoch), is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`utils/GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
+**② ELMC — Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, re-estimated every epoch, is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`utils/GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
 
 <p align="center">
   <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="90%">
@@ -228,11 +227,11 @@ Clustering accuracy (ACC) on MSRCV1 during training.
 
 Multi-view clustering data describes the same set of samples from several complementary views — e.g. different feature extractors, image and text modalities, or gene expression profiles — where each view is one feature matrix. Good multi-view datasets provide views that are informative on their own and complementary to each other.
 
-In this repo, each dataset is a single `.mat` file placed under `datasets/`, containing:
+In this repo, each dataset is a single `.mat` file placed under `datasets-/`, containing:
 - `X`: a cell array of view matrices — `X{1}, X{2}, ...` are the feature matrices of views 1, 2, ..., each of shape `(num_samples, num_dimensions)`;
 - `Y`: a column vector of sample labels, of shape `(num_samples, 1)`.
 
-To use your own data, arrange the views into the cell array `X`, the labels into `Y`, save them into a `.mat` file (e.g. via `scipy.io.savemat`), and drop the file into `datasets/` — `train.py` picks it up automatically and trains on every `.mat` file in the folder. Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
+To use your own data, arrange the views into the cell array `X`, the labels into `Y`, save them into a `.mat` file (e.g. via `scipy.io.savemat`), and drop the file into `datasets-/` — `train.py` picks it up automatically and trains on every `.mat` file in the folder. Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
 
 ---
 

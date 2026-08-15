@@ -77,7 +77,7 @@ python train.py
 (2) 用训练好的模型运行**评估**：
 
 ```shell
-python test.py --model 4.models --datasets ALOI-100
+python test.py --model 4.models --datasets- ALOI-100
 ```
 
 也可以在 `test.py` 顶部填写 `MODEL_PATH` / `DATASETS` 变量，或留空交互输入（权重路径优先级：`--model` > `MODEL_PATH` > 交互输入）。
@@ -90,7 +90,7 @@ MASA
 ├── test.py                           # 评估（加载 .pth + 数据集 → 前向 → K-means）
 ├── MASA.py                           # 模型定义（Network：编码器/解码器、投影头、加权融合）
 ├── loss.py                           # 损失函数（对比 + 重建/KL 稀疏）
-├── datasets                          # 数据集目录（.mat：X 视图 cell 数组 + Y 标签）
+├── datasets-                          # 数据集目录（.mat：X 视图 cell 数组 + Y 标签）
 ├── docs                              # 本 README 使用的图片
 └── utils                             # 工具模块
     ├── count_datasetY.py             # 类别分布统计与绘图
@@ -115,7 +115,7 @@ MASA
 
 ```py
 # 数据集文件夹路径（其下所有 .mat 依次训练）
-folder_path = "datasets"
+folder_path = "datasets-"
 # 输出目录运行时自动创建：
 # 1.logs/ 2.results_imgs/ 3.csv/(Metrics, ViewWeights) 4.models/ 5.tsne/
 ```
@@ -132,7 +132,7 @@ parser.add_argument("--learning_rate", type=float, default=0.0003)
 # AVE 预训练阶段的轮数
 parser.add_argument("--pre_epochs", type=int, default=300)  # 300
 # 一致性训练阶段的轮数（ELMC + GLDA）
-parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
+parser.add_argument("--con_epochs", type=int, default=300)  # 300/1000
 # 特征维度：编码侧更大（表示更丰富），对比投影侧更小（把损失限制在紧致子空间中，防止编码器发生维度坍缩）。
 parser.add_argument("--feature_dim", type=int, default=64)       # 视图专属特征
 parser.add_argument("--high_feature_dim", type=int, default=20)  # 压缩特征维度
@@ -189,7 +189,7 @@ kl_sparse_loss(hidden_layer_activation, rho, sparse_beta)
 contrastiveloss(H, rs[v], w2[v])
 ```
 
-此外，**ELMC** 模块通过拉普拉斯迹对齐（自适应带宽，默认为全局两两距离中位数）计算每个视图的融合权重。分数形式与带宽设置可在 `utils/GlobalLocalManifoldCalibration.py` 顶部切换（`SCORE_FORM` / `SIGMA_MODE`），对应消融表。
+此外，**ELMC** 模块通过拉普拉斯迹对齐计算每个视图的融合权重。分数形式与带宽设置可在 `utils/GlobalLocalManifoldCalibration.py` 顶部切换（`SCORE_FORM` / `SIGMA_MODE`），对应消融表。
 
 总体目标由两项组成，通过约束比例系数平衡：**AVE 损失**，对所有视图求和，即重建误差加自适应熵基稀疏惩罚（惩罚强度由每个视图探测到的稀疏率调制）；**GLDA 损失**，即全局融合表示与每个视图公共信息之间的对比对齐，在视图与样本上取平均。
 
@@ -203,7 +203,7 @@ MASA 是一个鲁棒的多视图聚类框架，基于三个核心模块，分**�
 
 **① AVE — 自适应视图专属编码** 处理多视图数据中常见的跨视图稀疏性差异：先从输入中探测每个视图的稀疏率（`MASA.py` 中的 `zero_value_proportion`），再把它当作先验信息，自适应地调制熵基稀疏约束的强度，越稀疏的视图获得越强的稀疏正则。这样，每个视图的编码器都能按自己的稀疏程度来调整（`loss.py` 中 `ae_loss_function` 的自适应稀疏系数）。
 
-**② ELMC — 早期到晚期流形一致性校准** 量化每个视图与早期融合全局表示之间的几何一致性：先为每个视图构建高斯核图拉普拉斯（带宽自适应，采用中位数启发式，每轮重新估计），再与全局拉普拉斯做对齐，得到一致性分数。跨视图归一化后，这些分数就成为融合权重：早期融合的流形结构借此指导后期融合，并压低不可靠视图的权重（`utils/GlobalLocalManifoldCalibration.py`；分数形式与带宽设置可切换，用于消融研究；MPS 不支持的算子自动回退 CPU）。
+**② ELMC — 早期到晚期流形一致性校准** 量化每个视图与早期融合全局表示之间的几何一致性：先为每个视图构建高斯核图拉普拉斯（每轮重新估计），再与全局拉普拉斯做对齐，得到一致性分数。跨视图归一化后，这些分数就成为融合权重：早期融合的流形结构借此指导后期融合，并压低不可靠视图的权重（`utils/GlobalLocalManifoldCalibration.py`；分数形式与带宽设置可切换，用于消融研究；MPS 不支持的算子自动回退 CPU）。
 
 <p align="center">
   <img src="docs/MSRCV1_acc.png" alt="MSRCV1 聚类准确率" width="90%">
@@ -223,11 +223,11 @@ MSRCV1 训练过程中的聚类准确率（ACC）。
 
 多视图聚类数据用若干个互补的视图描述同一组样本，例如不同的特征提取器、图像与文本模态，或者基因表达谱。每个视图都是一个特征矩阵。好的多视图数据集，其各个视图本身就有信息量，且彼此互补。
 
-在本仓库中，每个数据集是一个放在 `datasets/` 下的单个 `.mat` 文件，包含：
+在本仓库中，每个数据集是一个放在 `datasets-/` 下的单个 `.mat` 文件，包含：
 - `X`：视图矩阵的 cell 数组，`X{1}, X{2}, ...` 是视图 1, 2, ... 的特征矩阵，每个形状为 `(样本数, 维度数)`；
 - `Y`：样本标签列向量，形状为 `(样本数, 1)`。
 
-要使用你自己的数据，把视图放进 cell 数组 `X`，标签放进 `Y`，保存为 `.mat` 文件（例如通过 `scipy.io.savemat`），并把文件放入 `datasets/`。`train.py` 会自动读取并训练文件夹中每个 `.mat` 文件。常用公开多视图数据集见：https://github.com/wangsiwei2010/awesome-multi-view-clustering
+要使用你自己的数据，把视图放进 cell 数组 `X`，标签放进 `Y`，保存为 `.mat` 文件（例如通过 `scipy.io.savemat`），并把文件放入 `datasets-/`。`train.py` 会自动读取并训练文件夹中每个 `.mat` 文件。常用公开多视图数据集见：https://github.com/wangsiwei2010/awesome-multi-view-clustering
 
 ---
 
