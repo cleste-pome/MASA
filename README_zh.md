@@ -132,7 +132,7 @@ parser.add_argument("--learning_rate", type=float, default=0.0003)
 # AVE 预训练阶段的轮数
 parser.add_argument("--pre_epochs", type=int, default=300)  # 300
 # 一致性训练阶段的轮数（ELMC + GLDA）
-parser.add_argument("--con_epochs", type=int, default=300)  # 300/1000
+parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
 # 特征维度：编码侧更大（表示更丰富），对比投影侧更小（把损失限制在紧致子空间中，防止编码器发生维度坍缩）。
 parser.add_argument("--feature_dim", type=int, default=64)       # 视图专属特征
 parser.add_argument("--high_feature_dim", type=int, default=20)  # 压缩特征维度

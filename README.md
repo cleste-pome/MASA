@@ -133,7 +133,7 @@ parser.add_argument("--learning_rate", type=float, default=0.0003)
 # Number of epochs for the AVE pretraining stage
 parser.add_argument("--pre_epochs", type=int, default=300)  # 300
 # Number of epochs for the consistency training stage (ELMC + GLDA)
-parser.add_argument("--con_epochs", type=int, default=300)  # 300/1000
+parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
 # Feature dimensions: larger for encoding (richer representations), smaller for the contrastive projection (confines the loss to a compact subspace, shielding the encoder from dimensional collapse).
 parser.add_argument("--feature_dim", type=int, default=64)       # view-specific features
 parser.add_argument("--high_feature_dim", type=int, default=20)  # compressed feature dimension
