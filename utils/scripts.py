@@ -73,6 +73,15 @@ def _fmt_duration_compact(seconds):
     return f"{int(hours)}h{int(minutes)}m"
 
 
+def _fmt_file_size(nbytes):
+    """字节数 → 可读文本（512 B / 3.2 MB / 1.4 GB）"""
+    size = float(nbytes)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024 or unit == "TB":
+            return f"{size:.1f} {unit}" if unit != "B" else f"{int(size)} B"
+        size /= 1024
+
+
 def _linear_chain(module):
     """提取模块内 Linear 层的输入→输出维度链，如 Encoder: [1302, 500, 500, 2000, 64]"""
     chain = []

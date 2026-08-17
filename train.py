@@ -2,7 +2,7 @@
 =====================================================================
  MASA 训练程序 (train.py)
 =====================================================================
-功能：自动遍历 datasets-/ 下全部 .mat，逐个数据集完成两阶段训练 + 评估 + 出图。
+功能：自动遍历 datasets/ 下全部 .mat，逐个数据集完成两阶段训练 + 评估 + 出图。
 
 【不需要你填写的】直接运行 python train.py 即可；所有超参数（轮数/学习率/
   特征维度等）在 main() 的 argparse 定义处均有默认值，需要调整时改那里
@@ -46,7 +46,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"  # 设置OMP_NUM_THREADS环境变量
 
 from utils.scripts import PLOT_SIGMA, setup_seed, timing_secs, measure, print_model_summary, \
-    print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list, _log_file_only
+    print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list, _fmt_file_size, _log_file_only
 
 _CURRENT_PBAR = None  # 当前阶段进度条（主循环设置，训练函数内据此选择 tqdm.write 或 print 输出详情）
 
@@ -275,7 +275,9 @@ if __name__ == '__main__':
                 view = dataset.num_views
                 # 获取每个视图的维度
                 dims = list(chain.from_iterable(dataset.dims.tolist()))
-                print(f"\n[Data] Dataset info")
+                data_file = os.path.join(folder_path, f"{Dataname}.mat")
+                data_size_str = _fmt_file_size(os.path.getsize(data_file)) if os.path.exists(data_file) else "?"
+                print(f"\n[Data] Dataset info ({Dataname}, {data_size_str}, .mat)")
                 print(f"  {_kv('samples', data_size)}{_kv('views', view)}{_kv('classes', class_num)}")
                 print(f"  {_kv('view dims', str(dims))}")
                 print("-" * 72)

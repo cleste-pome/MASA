@@ -14,7 +14,7 @@
 
 ***
 
-Welcome to the official implementation of **MASA** — a multi-view clustering framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), and calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), which quantifies the agreement between each view's local manifold and the early-fused global manifold.
+Welcome to the official implementation of **MASA**, a multi-view clustering (MVC) framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), and aligns the global fused representation with each view's common information via contrastive learning (GLDA). ELMC measures how closely each view's local manifold agrees with the early-fused global manifold. The pipeline is agnostic to the number of views: two or more, fusion proceeds directly.
 
 <details open><summary>📣 I also have other multi-view clustering projects that may interest you ✨.</summary><p>
 
@@ -39,11 +39,23 @@ The flowchart of our proposed MASA framework. Adaptive View-specific Encoding (A
 ### 📑 Table of Contents
 - [🔗 Citation](#-citation)
 - [1. ✅ Run](#1--run)
+  - [1.1 Source code list](#11-source-code-list)
 - [2. 🧮 Main Code](#2--main-code)
+  - [2.1 Configuration](#21-configuration)
+  - [2.2 Hyperparameters](#22-hyperparameters)
+  - [2.3 Dataset Preprocessing](#23-dataset-preprocessing)
+  - [2.4 Outputs](#24-outputs)
 - [3. 🔬 Loss](#3--loss)
 - [4. 🧩 Method Overview](#4--method-overview)
 - [5. 📊 Dataset](#5--dataset)
+  - [5.1 Multi-view Data and the .mat Format](#51-multi-view-data-and-the-mat-format)
+  - [5.2 Creating Your Own Dataset](#52-creating-your-own-dataset)
+  - [5.3 Evaluation Metrics](#53-evaluation-metrics)
 - [6. 💻 User Guide](#6--user-guide-windows--linux--macos)
+  - [6.1 Requirements](#61-requirements)
+  - [6.2 Install PyTorch per platform](#62-install-pytorch-per-platform)
+  - [6.3 Device selection (automatic, no configuration needed)](#63-device-selection-automatic-no-configuration-needed)
+  - [6.4 Platform notes](#64-platform-notes)
 - [7. 🙏 Acknowledgments](#7--acknowledgments)
 
 ---
@@ -61,7 +73,7 @@ If this work or the code is helpful to you, please cite it when it is available�
 
 As a native Chinese speaker, researching means working in a language that is not my own. English never comes easily to me, and my writing still has much to improve. Writing a good paper is also a goal I keep working toward (´･ω･`). This code would not exist without the help I received along the way. I thank the supportive atmosphere of my lab and the generous sharing spirit of the open-source community. I am fortunate to stand on the shoulders of giants. Back then, I kept wishing there was a solid framework I could just pick up, test on, and improve. Now I hope to become one of those who help you, the one who comes after. The method itself may not be anything special. I feel that for a venue like this, finishing the paper is never the end of the work. The follow-up work, such as the open-source framework, deserves just as much care. This repository is my answer to that ( •̀ ω •́ )✧. I want it to be clean, clear, and inspiring to you. If you are working on multi-view clustering or unsupervised representation learning, I hope it saves you some time. Thank you for reading my paper and using my code. It is my honor. If it helps your research even a little, I will be very happy (●'◡'●).
 
-作为一个中文母语者，做研究意味着要用一门不属于自己的语言来工作。英语对我来说从来都不轻松，我的写作也还有很多不足之处需要改进。写一篇好论文，也是我一直在努力的目标 (´･ω･`)。这套代码能够完成，离不开一路上大家给予我的帮助，这要感谢实验室里互相帮助的氛围，感谢开源社区慷慨分享的氛围，我有幸站在了巨人的肩膀上。当时我就一直想要是有一个好的框架可以直接拿来测试改进就好了，现在我也想能成为其中之一去帮助后来的你。我的方法本身也许并不出色，我觉得对于这么好的期刊来说，写完论文绝不是一件工作的结束，后续工作比如开源框架同样值得用心做好。这个仓库就是我给出的答案 ( •̀ ω •́ )✧我希望它是干净的清晰的、能给你启发的。如果你也在做多视图聚类或者无监督表示学习，希望它能帮你省下一些时间。感谢你阅读我的论文，使用我的代码，这是我的荣幸。哪怕它对你的研究只有一点点帮助，我也会非常开心 (●'◡'●)。
+作为一个中文母语者，做研究意味着要用一门不属于自己的语言来工作，英语对我来说从来都不轻松。我的写作也还有很多不足之处需要改进，写一篇“好”论文也是我一直在努力的目标 (´･ω･`)。这套代码能够完成，离不开一路上大家给予我的帮助，这要感谢实验室里互相帮助的氛围，感谢开源社区慷慨分享的氛围，我有幸站在了巨人的肩膀上。在最开始接触MVC领域的时候我就在想要是有一个完整的框架可以直接拿来测试改进就好了，所以现在我走过最艰难的学习之路后也想去帮助现在的你也是曾经的我。我的方法本身也许并不出色，但我觉得对于这么好的期刊来说，写完论文绝不是一件工作的结束，后续比如开源框架同样值得用心做好。这个仓库就是我给出的答案一点微小的贡献 ( •̀ ω •́ )✧我希望它是干净清晰、能给你启发的。如果你也在做多视图聚类或者无监督表示学习，希望它能帮你省下一些时间。感谢你阅读我的论文，使用我的代码，这是我的荣幸。哪怕它对你的研究只有一点点帮助，我也会非常开心 (●'◡'●)。
 
 ## 1. ✅ Run
 
@@ -78,12 +90,12 @@ python train.py
 (2) To run the **evaluation** with a trained model:
 
 ```shell
-python test.py --model 4.models --datasets- ALOI-100
+python test.py --model 4.models --datasets ALOI-100
 ```
 
 Alternatively, edit the `MODEL_PATH` / `DATASETS` variables at the top of `test.py`, or leave them empty for interactive input (weight-path priority: `--model` > `MODEL_PATH` > interactive input).
 
-### 📂 Source code list:
+### 1.1 Source code list
 
 ```shell
 MASA
@@ -91,7 +103,7 @@ MASA
 ├── test.py                           # Evaluation (load .pth + dataset → forward → K-means)
 ├── MASA.py                           # Model definition (Network: Encoder/Decoder, projection head, weighted fusion)
 ├── loss.py                           # Loss functions (contrastive + reconstruction/KL sparsity)
-├── datasets-                          # Dataset directory (.mat: X view-cell array + Y labels)
+├── datasets                          # Dataset directory (.mat: X view-cell array + Y labels)
 ├── docs                               # Figures used in this README
 └── utils                             # Utilities
     ├── count_datasetY.py             # Class distribution statistics & plots
@@ -116,7 +128,7 @@ The dataset folder and output directories are handled automatically; the device 
 
 ```py
 # Dataset folder path (all .mat files under it are trained in turn)
-folder_path = "datasets-"
+folder_path = "datasets"
 # Output directories are created at runtime:
 # 1.logs/ 2.results_imgs/ 3.csv/(Metrics, ViewWeights) 4.models/ 5.tsne/
 ```
@@ -137,7 +149,7 @@ parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
 # Feature dimensions: larger for encoding (richer representations), smaller for the contrastive projection (confines the loss to a compact subspace, shielding the encoder from dimensional collapse).
 parser.add_argument("--feature_dim", type=int, default=64)       # view-specific features
 parser.add_argument("--high_feature_dim", type=int, default=20)  # compressed feature dimension
-# Random seed (fixed value for reproducible runs)
+# Random seed: anchors the random number generators of torch/numpy/python, so the stochastic components of training (weight initialization, data shuffling, dropout, K-means initialization) behave consistently for the same experimental configuration
 parser.add_argument("--seed", type=int, default=42)
 # Number of runs; --iter > 1 perturbs the seed/lr deterministically each round
 parser.add_argument("--iter", type=int, default=1)
@@ -193,7 +205,9 @@ contrastiveloss(H, rs[v], w2[v])
 Additionally, the **ELMC** module computes per-view fusion weights by Laplacian trace
 alignment. The score form and bandwidth setting can be switched at the top of
 `utils/GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
-ablation tables.
+ablation tables. Based on experimental results, when the data scale is larger or the
+training epochs are more, the kernel bandwidth can be adjusted to a fixed value to balance
+the training cost.
 
 The overall objective combines two terms, balanced by a constraint ratio coefficient: the **AVE loss**, summed over all views, of the reconstruction error plus the adaptive entropy-based sparsity penalty (whose strength is modulated by each view's probed sparsity ratio); and the **GLDA loss**, the contrastive alignment between the global fused representation and each view's common information, averaged over views and samples.
 
@@ -205,9 +219,9 @@ As the simplest and most intuitive self-supervised task, clustering offers a dir
 
 MASA is a robust multi-view clustering framework built on three core modules and trained in **two stages**: first *AVE pretraining* (reconstruction with adaptive sparsity), then *consistency training* (ELMC weighting + GLDA alignment). The aligned global representation is finally clustered by K-means into ACC / NMI / PUR / ARI.
 
-**① AVE — Adaptive View-specific Encoding** handles the cross-view sparsity heterogeneity typical of multi-view data: the sparsity ratio of each view is probed from its input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint — sparser views receive stronger sparse regularization, so that each view's encoder is tuned in a view-aware manner (adaptive sparse coefficient in `ae_loss_function`, `loss.py`).
+**① AVE: Adaptive View-specific Encoding** handles the cross-view sparsity heterogeneity typical of multi-view data: the sparsity ratio of each view is probed from its input (`zero_value_proportion` in `MASA.py`) and used as prior knowledge to adaptively modulate the strength of the entropy-based sparse constraint; sparser views receive stronger sparse regularization, so that each view's encoder is tuned in a view-aware manner (adaptive sparse coefficient in `ae_loss_function`, `loss.py`).
 
-**② ELMC — Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, re-estimated every epoch, is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`utils/GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
+**② ELMC: Early-to-late Manifold Consistency Calibration** quantifies the geometric agreement between each view and the early-fused global representation: a Gaussian-kernel graph Laplacian per view, re-estimated every epoch, is aligned with the global Laplacian into a consistency score; normalized across views, the scores become fusion weights that let the manifold structure of early fusion guide the late-stage fusion and down-weight unreliable views (`utils/GlobalLocalManifoldCalibration.py`; score form and bandwidth setting are switchable for the ablation study; MPS-unsupported ops fall back to CPU automatically).
 
 <p align="center">
   <img src="docs/MSRCV1_acc.png" alt="Clustering accuracy on MSRCV1" width="90%">
@@ -217,27 +231,73 @@ MASA is a robust multi-view clustering framework built on three core modules and
 Clustering accuracy (ACC) on MSRCV1 during training.
 </p>
 
-**③ GLDA — Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: both the fused representation and the per-view common information are L2-normalized before computing pairwise similarities, and a contrastive loss (temperature 1) pulls them together — the normalization keeps the temperature meaningful regardless of feature scales; reconstruction terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`).
-
-**Evaluation metrics.** The quality of the learned representation is measured by four standard clustering metrics: **ACC** (Accuracy) — the proportion of samples correctly matched to the ground-truth labels after optimal label alignment; **NMI** (Normalized Mutual Information) — the normalized mutual information between the clustering and the ground-truth partition; **PUR** (Purity) — the proportion of samples assigned to their dominant class; and **ARI** (Adjusted Rand Index) — the similarity between two clusterings corrected for chance. They are computed on the K-means clustering (n_init=100) of the final global representation, with higher values indicating better clustering quality.
-
----
+**③ GLDA: Global-local Distribution Alignment** aligns the global fused representation with each view's local shared information: both the fused representation and the per-view common information are L2-normalized before computing pairwise similarities, and a contrastive loss (temperature 1) pulls them together; the normalization keeps the temperature meaningful regardless of feature scales; reconstruction terms preserve view-specific fidelity (`loss.py` + the consistency training stage of `train.py`).
 
 ## 5. 📊 Dataset
 
-Multi-view clustering data describes the same set of samples from several complementary views — e.g. different feature extractors, image and text modalities, or gene expression profiles — where each view is one feature matrix. Good multi-view datasets provide views that are informative on their own and complementary to each other.
+### 5.1 Multi-view Data and the .mat Format
 
-In this repo, each dataset is a single `.mat` file placed under `datasets-/`, containing:
-- `X`: a cell array of view matrices — `X{1}, X{2}, ...` are the feature matrices of views 1, 2, ..., each of shape `(num_samples, num_dimensions)`;
+Multi-view clustering data describes the same set of samples from several complementary views, e.g. different feature extractors, image and text modalities, or gene expression profiles, where each view is one feature matrix. Good multi-view datasets provide views that are informative on their own and complementary to each other.
+
+In this repo, each dataset is a single `.mat` file placed under `datasets/`, containing:
+- `X`: a cell array of view matrices; `X{1}, X{2}, ...` are the feature matrices of views 1, 2, ..., each of shape `(num_samples, num_dimensions)`;
 - `Y`: a column vector of sample labels, of shape `(num_samples, 1)`.
 
-To use your own data, arrange the views into the cell array `X`, the labels into `Y`, save them into a `.mat` file (e.g. via `scipy.io.savemat`), and drop the file into `datasets-/` — `train.py` picks it up automatically and trains on every `.mat` file in the folder. Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
+The loading logic lives in `utils/dataloader.py`:
+
+```python
+# MATKind: read the .mat file
+data = scipy.io.loadmat(f"{path}/{dataset_name}.mat")
+data_X = data['X'][0]          # view matrices of ALL views (cell array)
+data_Y = data['Y']             # labels
+
+# MultiViewDataset: the view count is read from the file, never hard-coded
+self.num_views = data_X.shape[0]           # 2, 6, 10 views: the same code works
+for v in range(self.num_views):
+    self.X[v] = self.normalize(data_X[v])  # each view is normalized independently
+self.Y = np.squeeze(self.Y)                # labels -> 1-D; if they start at 1, shifted to start at 0
+self.num_classes = len(np.unique(self.Y))  # class count derived automatically
+```
+
+The number of views is never hard-coded; it is read from the file, so the same code handles datasets with 2, 6, or 10 views without any modification (e.g. `MSRCV1.mat` has 6 views with 1302/48/512/100/256/210 dimensions). Views may also differ in dimensionality, since each view is normalized on its own, and the class count is derived automatically from the labels.
+
+After loading, `train.py` calls `count_classes(Dataname, dataset.Y)` (`utils/count_datasetY.py`): it tallies the sample count of every class with `np.unique(Y, return_counts=True)` and draws a single class-distribution report (class sizes, long-tail analysis, and related statistics), saved as `1.logs/{dataset_name}/{dataset_name}_ClassReport.png` (300 dpi). It is useful for spotting imbalanced datasets before training.
+
+### 5.2 Creating Your Own Dataset
+
+1. Prepare one feature matrix per view, shape `(num_samples, num_dimensions)`; different views may have different dimensions, but every view must have the same number of rows (one per sample) and the sample order must match across views.
+2. Pack the views into `X` as a MATLAB cell array of shape `(1, num_views)` (each element one view matrix), and put the integer labels into `Y` as a `(num_samples, 1)` column vector.
+3. Save both into a single `.mat` file (e.g. with `scipy.io.savemat`) and drop it into `datasets/`; `train.py` picks it up automatically, no registration needed. You can inspect a bundled dataset (e.g. `datasets/MSRCV1.mat`) with `scipy.io.loadmat` to see the exact layout.
+
+Common public multi-view datasets can be found at: https://github.com/wangsiwei2010/awesome-multi-view-clustering
+
+---
+
+
+### 5.3 Evaluation Metrics
+
+The quality of the learned representation is measured by four standard clustering metrics: **ACC** (Accuracy): the proportion of samples correctly matched to the ground-truth labels after optimal label alignment; **NMI** (Normalized Mutual Information): the normalized mutual information between the clustering and the ground-truth partition; **PUR** (Purity): the proportion of samples assigned to their dominant class; and **ARI** (Adjusted Rand Index): the similarity between two clusterings corrected for chance. They are computed on the K-means clustering (n_init=100) of the final global representation, with higher values indicating better clustering quality.
+
+The four metrics are implemented in `utils/metric.py`:
+
+```python
+# utils/metric.py: evaluate() computes all four metrics at once
+def evaluate(y_true, y_pred):
+    return {
+        "nmi": v_measure_score(y_true, y_pred),      # NMI: normalized mutual information
+        "ari": adjusted_rand_score(y_true, y_pred),  # ARI: adjusted rand index
+        "acc": cluster_acc(y_true, y_pred),          # ACC: accuracy after optimal label matching
+        "purity": purity(y_true, y_pred),            # PUR: purity
+    }
+```
+
+Here ACC (`cluster_acc`) matches the predicted cluster ids to the ground-truth labels with the Hungarian algorithm (`linear_sum_assignment`) before counting the correctly classified samples.
 
 ---
 
 ## 6. 💻 User Guide (Windows / Linux / macOS)
 
-### ⚙️ Requirements
+### 6.1 Requirements
 
 | Library | Version | Recommended | Purpose |
 |---|---|---|---|
@@ -249,7 +309,7 @@ To use your own data, arrange the views into the cell array `X`, the labels into
 
 - PyTorch is installed separately per platform (see below); the GPU K-means alternatives (cuML/cuPy) are optional and **not** required by default.
 
-### Install PyTorch per platform
+### 6.2 Install PyTorch per platform
 
 | Platform | Install command | Default device |
 |---|---|---|
@@ -259,7 +319,7 @@ To use your own data, arrange the views into the cell array `X`, the labels into
 
 > **提示**：官方源在国内下载较慢，一般 Python 包可换用[清华 TUNA 镜像](https://pypi.tuna.tsinghua.edu.cn/simple)，PyTorch 可换用[阿里云镜像](https://mirrors.aliyun.com/pytorch-wheels/cu121)。
 
-### Device selection (automatic, no configuration needed)
+### 6.3 Device selection (automatic, no configuration needed)
 
 - Decision rule: **CUDA > MPS > CPU** (`utils/device_check.py`, probed automatically at startup).
 - Force a device with the environment variable `MASA_DEVICE=cuda|mps|cpu|auto` (unavailable or invalid values fall back to automatic):
@@ -272,9 +332,9 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 
 - Standalone probe (prints the environment summary only, no training): `python utils/device_check.py`
 
-### Platform notes
+### 6.4 Platform notes
 
-- **macOS**: MPS requires macOS ≥ 12.3 and an official PyTorch build; unsupported ops under MPS (`torch.cdist` / `torch.diag` in the ELMC module) automatically fall back to CPU — nothing to configure.
+- **macOS**: MPS requires macOS ≥ 12.3 and an official PyTorch build; unsupported ops under MPS (`torch.cdist` / `torch.diag` in the ELMC module) automatically fall back to CPU; nothing to configure.
 - **Linux / Windows without CUDA**: falls back to CPU automatically. `OMP_NUM_THREADS=1` is preset in `train.py` to avoid thread oversubscription on CPU.
 - **CUDA**: to choose a specific GPU, set `CUDA_VISIBLE_DEVICES` (train.py presets `"0"`); multi-GPU is not required.
 
@@ -283,3 +343,5 @@ MASA_DEVICE=cpu  python train.py    # force CPU
 ## 7. 🤝 Acknowledgments
 
 Our proposed MASA draws inspiration from the works of [SCMVC](https://github.com/SongwuJob/SCMVC), [RCML](https://github.com/jiajunsi/RCML), [DCG](https://github.com/zhangyuanyang21/2025-AAAI-DCG) and the [Awesome-Deep-Multi-View-Clustering](https://github.com/jinjiaqi1998/Awesome-Deep-Multi-View-Clustering) collection. We would like to thank the authors for their valuable contributions to the multi-view clustering community.
+
+This codebase is built on the open-source ecosystem: [PyTorch](https://pytorch.org/) for deep learning, [scikit-learn](https://scikit-learn.org/) for clustering evaluation, [scipy](https://scipy.org/) for loading `.mat` datasets and scientific computing, and [matplotlib](https://matplotlib.org/) for visualization. We sincerely thank the developers of these projects for their free and excellent software. The public multi-view datasets used in the experiments were collected from the community, and we are grateful to the dataset creators for sharing them.

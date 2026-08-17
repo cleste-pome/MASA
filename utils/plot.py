@@ -183,7 +183,7 @@ def plot_acc(imgs_path, acc_list, dataset_name, name, x_values=None, pre_epochs=
                         f"Last: {last_acc * 100:.2f}%",
             transform=ax.transAxes, ha="right", va="bottom", fontsize=8.5, color="#666666")
 
-    # TODO 文件名（四个单独指标曲线统一放 Metrics/ 子文件夹）
+    # 四个单独指标曲线统一放 Metrics/ 子文件夹
     filename = os.path.join(imgs_path, 'Metrics', f'{dataset_name}_ep{last_epoch}_{name}.png')
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
