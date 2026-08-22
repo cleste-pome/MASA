@@ -19,6 +19,8 @@ test.py — MASA 测试程序 · 评估入口
 注意：
   ⚠ 权重维度必须与网络结构匹配（feature_dim / high_feature_dim 与训练时一致）
   ⚠ 权重目录下每份 .pth 都是一次独立实验，全部评估、各占一行
+  ⚠ 评估范围由权重文件决定：没指定 --datasets 时直接遍历权重目录（目录里有几个数据集、
+     几份权重就输出几组结果，没有对应权重文件的数据集不会被列出）
   ⚠ 单份权重评估失败不影响其他权重（跳过并标注）
 """
 
@@ -26,6 +28,7 @@ test.py — MASA 测试程序 · 评估入口
 import argparse     # 命令行参数解析（可选，日常改顶部 TODO 即可）
 import glob         # 通配符匹配权重文件（目录内找 .pth）
 import os           # 路径与文件操作
+import re           # 从权重文件名剥离时间戳（推断数据集名）
 import sys          # 程序退出（路径不存在 / 未输入）
 import time         # 记录每个数据集的评估用时
 from itertools import chain  # 展平各视图维度列表
@@ -53,11 +56,13 @@ from utils.dataloader import MATKind          # 数据集加载（.mat 多视图
 #   留空 "" 时运行中会在控制台提示你输入
 MODEL_PATH = "weights"   # 字符串：权重路径（.pth 文件或目录）
 
-# TODO 2：要评估的数据集 — 逗号分隔；留空 = datasets/ 下全部 .mat（推荐）
+# TODO 2：要评估的数据集 — 逗号分隔；留空 = 按权重文件自动决定（推荐）
 #   例: DATASETS = "ALOI-100"
 #   例: DATASETS = "ALOI-100,MSRCV1"
 #   例: DATASETS = "datasets/MSRCV1.mat"   ← 直接传 .mat 路径也可以（自动去路径）
-DATASETS = ""                                # 字符串：数据集名或 .mat 路径，逗号分隔（留空 = datasets/ 下全部）
+#   留空时不遍历 datasets/：权重目录里有哪些数据集、几份权重，就输出几组结果
+#   （没有对应权重文件的数据集不会被列出）
+DATASETS = ""                                # 字符串：数据集名或 .mat 路径，逗号分隔（留空 = 按权重文件自动决定）
 
 # TODO 3：网络维度 — 必须与训练时一致（否则权重加载会报错）
 #   ⚠ 训练默认值是 64 / 20；若训练时改过 --feature_dim / --high_feature_dim，这里要同步
@@ -75,24 +80,22 @@ SEED = 50                 # 整数：随机种子
 # ║  第 1 步：收集要评估的数据集                                                  ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-def collect_datasets(names=None):
-    """收集要评估的数据集：names 为空时遍历 datasets/ 下全部 .mat。
+def collect_datasets(names):
+    """把显式传入的数据集参数解析为数据集名列表（带 .mat 存在性校验）。
     条目兼容两种写法：纯数据集名（如 MSRCV1）或 .mat 文件路径
     （如 datasets/MSRCV1.mat，自动去掉路径与扩展名）；不存在的数据集打印警告并跳过。"""
-    if names:
-        out = []
-        for n in names.split(","):
-            n = n.strip()
-            if not n:
-                continue
-            if n.lower().endswith(".mat"):       # 兼容传 datasets/MSRCV1.mat 这类路径
-                n = os.path.basename(n)[:-4]
-            if os.path.isfile(os.path.join("datasets", n + ".mat")):
-                out.append(n)
-            else:
-                print(f"[skip] datasets/{n}.mat not found")
-        return out
-    return [f[:-4] for f in sorted(os.listdir("datasets")) if f.endswith(".mat")]
+    out = []
+    for n in names.split(","):
+        n = n.strip()
+        if not n:
+            continue
+        if n.lower().endswith(".mat"):       # 兼容传 datasets/MSRCV1.mat 这类路径
+            n = os.path.basename(n)[:-4]
+        if os.path.isfile(os.path.join("datasets", n + ".mat")):
+            out.append(n)
+        else:
+            print(f"[skip] datasets/{n}.mat not found")
+    return out
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -123,6 +126,54 @@ def resolve_weights(model_arg, dataset_name):
     return []
 
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  第 2b 步：从权重文件反推数据集 —— 评估范围完全由权重决定                        ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+_TS_RE = re.compile(r"_?\d{8}-\d{6}(_best\d+)?$")   # 时间戳尾缀 {YYYYMMDD-HHMMSS}，可带最佳轮副本标记 _best{epoch}
+
+
+def _infer_dataset_name(fname):
+    """从权重文件名推断数据集名：'{数据集}{YYYYMMDD-HHMMSS}.pth'、
+    '{数据集}_{YYYYMMDD-HHMMSS}.pth' 或带 '_best{epoch}' 的最佳轮副本 → 数据集名；
+    不带时间戳的文件直接取文件名主体。"""
+    base = fname[:-4] if fname.endswith(".pth") else fname
+    return _TS_RE.sub("", base) or base
+
+
+def collect_weight_datasets(model_arg):
+    """按权重文件列出 [(数据集名, [权重路径...]), ...]，目录里有几个数据集就评估几个：
+    - 路径为文件：按文件名推断数据集名，返回 [(name, [file])]
+    - 路径为目录：子目录 {dir}/{数据集}/*.pth 每个子目录一个数据集；
+      顶层平铺 *.pth 按文件名推断数据集分组；组内权重按修改时间旧 → 新
+    找不到任何权重时返回 []。"""
+    if os.path.isfile(model_arg):
+        return [(_infer_dataset_name(os.path.basename(model_arg)), [model_arg])]
+    found = []      # [(数据集名, [权重路径]), ...]，组内已是旧 → 新
+    seen = set()    # 去重：平铺匹配会跳过已归入子目录的文件
+    for sub in sorted(os.listdir(model_arg)):
+        sub_path = os.path.join(model_arg, sub)
+        if os.path.isdir(sub_path):
+            pths = sorted(glob.glob(os.path.join(sub_path, "*.pth")), key=os.path.getmtime)
+            if pths:
+                found.append((sub, pths))
+                seen.update(pths)
+    flat = [p for p in glob.glob(os.path.join(model_arg, "*.pth")) if p not in seen]
+    if flat:
+        flat.sort(key=os.path.getmtime)                   # 旧 → 新
+        by_name = {}
+        for p in flat:
+            by_name.setdefault(_infer_dataset_name(os.path.basename(p)), []).append(p)
+        found.extend((n, by_name[n]) for n in sorted(by_name))
+    # 同名数据集合并（子目录与平铺同名的极端情况），按数据集名排序输出
+    merged = {}
+    for name, pths in found:
+        for p in pths:
+            if p not in merged.setdefault(name, []):
+                merged[name].append(p)
+    return [(n, merged[n]) for n in sorted(merged)]
+
+
 def _fmt_duration(seconds):
     """秒数 → 可读文本（如 12.3s / 1m05s）"""
     seconds = max(0.0, seconds)
@@ -142,11 +193,11 @@ if __name__ == '__main__':
     #   例: --model 4.models                                    ← 填目录（自动按数据集匹配）
     parser = argparse.ArgumentParser(description='MASA 测试：加载权重并评估聚类性能')
     parser.add_argument('--model', type=str, default=None, help='权重路径：.pth 文件，或目录（自动按数据集匹配）')
-    # --datasets：要评估的数据集（优先级：本参数 > 顶部 DATASETS > 全部）。填法：
+    # --datasets：要评估的数据集（优先级：本参数 > 顶部 DATASETS > 按权重文件自动决定）。填法：
     #   例: --datasets ALOI-100              ← 只评一个数据集（纯名称）
     #   例: --datasets datasets/MSRCV1.mat   ← 也可以直接传 .mat 路径
     #   例: --datasets MSRCV1,Out-Scene      ← 多个数据集用逗号分隔
-    parser.add_argument('--datasets', type=str, default='', help='数据集名或 .mat 路径，逗号分隔（默认：datasets/ 下全部）')
+    parser.add_argument('--datasets', type=str, default='', help='数据集名或 .mat 路径，逗号分隔（默认：按权重文件自动决定）')
     # --feature_dim / --high_feature_dim：网络维度（默认取顶部 TODO 3，须与训练时一致）
     #   例: --feature_dim 128 --high_feature_dim 32   ← 训练时若改过，这里要同步
     parser.add_argument('--feature_dim', type=int, default=FEATURE_DIM, help='编码器输出维度（须与训练时一致）')
@@ -173,7 +224,7 @@ if __name__ == '__main__':
         sys.exit(1)
     args.model = model_arg
 
-    # 数据集优先级：--datasets > DATASETS > 全部
+    # 数据集优先级：--datasets > DATASETS > 按权重文件自动决定
     args.datasets = args.datasets or (DATASETS.strip() or '')
 
     # ╔══════════════════════════════════════════════════════════════════════╗
@@ -184,22 +235,34 @@ if __name__ == '__main__':
     device, _ = detect_device(verbose=False)
     print(f'Device: {device} | Weights: {args.model}')
 
-    datasets = collect_datasets(args.datasets)
-    print(f'Datasets to evaluate: {datasets}')
+    # 数据集来源：显式指定时用 --datasets / 顶部 DATASETS（没有对应权重文件的数据集静默跳过）；
+    # 未指定时完全由权重文件决定 —— 权重目录里有几个数据集、几份权重，就输出几组结果
+    if args.datasets:
+        plan = [(name, resolve_weights(args.model, name))
+                for name in collect_datasets(args.datasets)]
+        plan = [(name, weights) for name, weights in plan if weights]  # 无权重数据集不显示
+        if not plan:
+            print(f'[skip] no weight file found for the given datasets under {args.model}')
+            sys.exit(0)
+        print(f'Datasets to evaluate (explicit): {[name for name, _ in plan]}')
+    else:
+        plan = collect_weight_datasets(args.model)
+        if not plan:
+            print(f'[skip] no weight files found under {args.model} '
+                  f'(expected like {args.model}/{{dataset}}{{timestamp}}.pth)')
+            sys.exit(0)
+        n_weights = sum(len(weights) for _, weights in plan)
+        print(f'Weight files to evaluate: {n_weights} across {len(plan)} dataset(s): '
+              f'{", ".join(name for name, _ in plan)}')
 
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  第 5 步：逐个数据集评估（加载权重 → 前向 → K-means → 指标）            ║
     # ╚══════════════════════════════════════════════════════════════════════╝
     summary = []   # 每项: (数据集名, 权重文件名, 样本数, 视图数, acc, nmi, pur, ari, 评估用时秒)
-    for name in datasets:
+    for name, weights in plan:                               # plan：每项 (数据集名, [权重路径...])
         print('\n' + '=' * 66)
         print(f'  Dataset: {name}')
         print('=' * 66)
-        weights = resolve_weights(args.model, name)          # 该数据集可用的全部权重（空则跳过）
-        if not weights:
-            print(f'[skip] no weight file found for {name} (if --model is a file, check the structure matches)')
-            summary.append((name, "—", None, None, None, None, None, None, None))
-            continue
         print(f'Weights ({len(weights)} files, old → new):')
         for w in weights:
             print(f'  - {w}')
