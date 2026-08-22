@@ -259,7 +259,7 @@ self.Y = np.squeeze(self.Y)                # labels -> 1-D; if they start at 1, 
 self.num_classes = len(np.unique(self.Y))  # class count derived automatically
 ```
 
-The number of views is never hard-coded; it is read from the file, so the same code handles datasets with 2, 6, or 10 views without any modification (e.g. `MSRCV1.mat` has 6 views with 1302/48/512/100/256/210 dimensions). Views may also differ in dimensionality, since each view is normalized on its own, and the class count is derived automatically from the labels.
+The number of views is never hard-coded; it is read from the file, so the same code handles datasets with 2, 6, or 10 views without any modification (e.g. `MSRCV1.mat` has 6 views with 1302/48/512/100/256/210 dimensions). Views may also differ in dimensionality, since each view is normalized on its own, and the class count is derived automatically from the labels. All views are min-max normalized to the unit range independently before training.
 
 After loading, `train.py` calls `count_classes(Dataname, dataset.Y)` (`utils/count_datasetY.py`): it tallies the sample count of every class with `np.unique(Y, return_counts=True)` and draws a single class-distribution report (class sizes, long-tail analysis, and related statistics), saved as `1.logs/{dataset_name}/{dataset_name}_ClassReport.png` (300 dpi). It is useful for spotting imbalanced datasets before training.
 

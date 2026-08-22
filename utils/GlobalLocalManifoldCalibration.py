@@ -6,7 +6,7 @@ import torch
 #   SCORE_FORM —— 一致性分数形式（实验对比用，默认 'trace'）：
 #     'trace'     原始迹：S_v = Tr(L_v L_G)，同时保留结构对齐与视图
 #                 能量/尺度信息——能量作为视图表达强度的隐式先验，
-#                 供后续 GLDA 全局-局部对齐适配（Eq. 9 原式）
+#                 供后续 GLDA 全局-局部对齐适配
 #     'cosine'    余弦核对齐：S_v = Tr(L_v L_G)/(||L_v||_F * ||L_G||_F)
 #                 （仅结构方向、丢弃尺度，实验备选）
 #     'distance'  距离型：S_v = exp(-||L_v - L_G||_F^2)
@@ -66,7 +66,7 @@ def manifold_alignment_weights(zs, z_all, sigma=None, device=None):
         zs = [torch.nn.functional.normalize(z, dim=1) for z in zs]
 
     # 全局成对距离矩阵：算 σ 用的 d_all 与全局 Laplacian 需要的是同一张矩阵，
-    # 共享复用省一次 O(n²) 的 cdist（保持梯度路径与旧行为一致：σ 经 .item() 截断不参与反传）
+    # 共享复用省一次 O(n²) 的 cdist（σ 经 .item() 截断，不参与反传）
     global_d_all = None
 
     sigma_per_sample = None  # 局部带宽模式（'local'）下为每个样本的带宽向量
@@ -143,7 +143,7 @@ def manifold_alignment_weights(zs, z_all, sigma=None, device=None):
     for i, z in enumerate(zs):
         L_i = laplacian_matrix(z)  # 计算每个视图的拉普拉斯矩阵
         if SCORE_FORM == 'trace' or SCORE_FORM == 'l_sym' or SCORE_FORM == 'z_norm':
-            # 原始迹（Eq. 9）：同时保留结构对齐与视图能量/尺度信息
+            # 原始迹：同时保留结构对齐与视图能量/尺度信息
             weights[i] = torch.trace(torch.mm(L_i, L_G))
         elif SCORE_FORM == 'cosine':
             # 余弦核对齐：归一化消除嵌入尺度与图密度的影响
