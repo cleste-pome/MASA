@@ -23,6 +23,11 @@ from tabulate import tabulate
 warnings.filterwarnings("ignore", message="KMeans is known to have a memory leak")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+# 对外导出清单（supports `from utils.scripts import *`，下划线开头的内部名也须在此显式列出）
+__all__ = ["PLOT_SIGMA", "setup_seed", "timing_secs", "measure", "BAR_FORMAT", "_kv",
+           "_fmt_ratio_list", "_fmt_file_size", "_log_file_only", "print_model_summary",
+           "print_timing_report"]
+
 PLOT_SIGMA = False  # 是否绘制 ELMC σ 变化曲线（模块常量，不做命令行超参数）
 
 
