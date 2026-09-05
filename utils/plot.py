@@ -13,11 +13,13 @@ plot_acc(imgs_path, acc_list, Dataname, 'acc', x_values=epoch_ticks)
 """
 
 
-def plot_loss(imgs_path, loss_list, dataset_name, name, total_epochs=None):
-    """绘制损失曲线。
+def plot_loss(imgs_path, loss_list, dataset_name, name, total_epochs=None, components=None):
+    """绘制损失曲线，可选附带损失分量曲线。
 
     :param name: 图名（下划线形式，如 'pretrain_loss'，显示时自动转回空格）。
     :param total_epochs: 总训练轮数（pre+con），用于文件名统一 ep 后缀；None 时退回阶段轮数。
+    :param components: 分量字典 {标签: 值列表}，如 {'global_ae': [...], 'view_ae': [...]}；
+                       非 None 时只画各分量曲线（总损失 = 分量之和，单独画会把分量压扁看不见）。
     """
     os.makedirs(imgs_path, exist_ok=True)
 
@@ -26,18 +28,27 @@ def plot_loss(imgs_path, loss_list, dataset_name, name, total_epochs=None):
     display_name = name.replace('_', ' ')
     plt.figure(figsize=(12, 6))
 
-    # 绘制损失曲线，缩小折线宽度和点的大小
-    plt.plot(range(1, epochs + 1), loss_list, marker='o', color='tab:blue', linestyle='-', linewidth=1, markersize=5,
-             label=f'{display_name}')
+    # 无分量时画总损失曲线
+    if components is None:
+        plt.plot(range(1, epochs + 1), loss_list, marker='o', color='tab:blue', linestyle='-', linewidth=2,
+                 markersize=5, label=f'{display_name}')
+        curve_values = loss_list
+    # 有分量时只画各分量曲线（预训练 2 条：global_ae/view_ae；一致性 3 条：再 + contrastive；总损失=分量之和）
+    else:
+        curve_values = []
+        for label, comp_list in components.items():
+            plt.plot(range(1, len(comp_list) + 1), comp_list, marker='.', linestyle='-', linewidth=1.2,
+                     markersize=4, label=label)
+            curve_values.extend(comp_list)
 
     # 设置坐标轴标签，优化字体大小和加粗
     plt.xlabel('Epoch', fontsize=14, fontweight='bold', color='darkblue')
     plt.ylabel(f'{display_name}', fontsize=14, fontweight='bold', color='darkblue')
     plt.title(f'{dataset_name}[{name}]', fontsize=16, fontweight='bold', color='darkred')
 
-    # 设置x轴和y轴的范围
+    # 设置x轴和y轴的范围（有分量时按分量曲线的最小最大值取）
     plt.xlim(0, epochs + 1)
-    plt.ylim(min(loss_list) - 0.1, max(loss_list) + 0.1)
+    plt.ylim(min(curve_values) - 0.1, max(curve_values) + 0.1)
 
     # 绘制网格线，调整样式为虚线且增加透明度
     plt.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.6)
@@ -183,7 +194,7 @@ def plot_acc(imgs_path, acc_list, dataset_name, name, x_values=None, pre_epochs=
                         f"Last: {last_acc * 100:.2f}%",
             transform=ax.transAxes, ha="right", va="bottom", fontsize=8.5, color="#666666")
 
-    # 四个单独指标曲线统一放 Metrics/ 子文件夹
+    # TODO 文件名（四个单独指标曲线统一放 Metrics/ 子文件夹）
     filename = os.path.join(imgs_path, 'Metrics', f'{dataset_name}_ep{last_epoch}_{name}.png')
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))

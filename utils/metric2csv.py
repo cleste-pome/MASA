@@ -18,7 +18,7 @@ def find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list, acc_weig
     return max_index
 
 
-def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_name, data_rate, Valid_check_num,
+def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_name, data_rate, epoch_ticks,
                        current_time):
     # 创建logs文件夹（汇总指标与视图指标同放 Metrics/ 下）
     csv_path = f'3.csv/Metrics'
@@ -28,16 +28,18 @@ def save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, data_n
     # 创建以data_name命名的csv文件路径（文件名带时间戳，区分多次实验）
     file_path = os.path.join(csv_path, f'{data_name}_{current_time}_{data_rate}.csv')
 
+    # 各列表长度应一致（每验证点一条），epoch 用训练时记录的 epoch_ticks，不重新算术生成
+    assert len(epoch_ticks) == len(acc_list) == len(nmi_list) == len(pur_list) == len(ari_list) == len(loss_list), \
+        f'列表长度不一致: epoch_ticks={len(epoch_ticks)}, acc={len(acc_list)}, loss={len(loss_list)}'
+
     # 写入数据到CSV文件
     with open(file_path, 'w', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
         # 写入表头
         csvwriter.writerow(['epoch', 'acc', 'nmi', 'pur', 'ari', 'loss'])
-        # 写入数据
-        epoch = 1 * Valid_check_num
-        for acc, nmi, pur, ari, loss in zip(acc_list, nmi_list, pur_list, ari_list, loss_list):
+        # 写入数据（epoch 为真实验证轮次，loss 为对应验证点的当轮总损失）
+        for epoch, acc, nmi, pur, ari, loss in zip(epoch_ticks, acc_list, nmi_list, pur_list, ari_list, loss_list):
             csvwriter.writerow([epoch, acc, nmi, pur, ari, loss])
-            epoch += 1 * Valid_check_num
 
     pass  # 保存路径不逐个打印，训练结束由 train.py 统一输出一句结果位置
 

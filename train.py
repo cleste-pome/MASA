@@ -29,21 +29,24 @@ from tabulate import tabulate  # 运行时间报告表格（与 metric.py 样式
 from tqdm import tqdm
 
 # ===================== 项目内部模块 =====================
-from loss import *                          # ContrastiveLoss, ae_loss_function
-from utils.metric import *                  # valid
-from MASA import *                          # Network
-from utils.GlobalLocalManifoldCalibration import *  # reset_sigma_history, get_sigma_history
-from utils import Logger                    # 模块级访问：Logger.get_logger(...)
-from utils.count_datasetY import *          # count_classes
-from utils.dataloader import *              # MATKind 等
-from utils.device_check import *            # detect_device
-from utils.metric2csv import *              # find_max_weighted_sum_index、CSV 保存
-from utils.plot import *                    # 训练曲线绘制
-from utils.tsne_visual import *             # t-SNE 出图
-from utils.scripts import *                 # 导出清单见 utils/scripts.py 的 __all__
+from loss import ContrastiveLoss, ae_loss_function
+from utils.metric import valid
+from MASA import Network
+from utils.GlobalLocalManifoldCalibration import reset_sigma_history, get_sigma_history
+from utils import Logger
+from utils.count_datasetY import count_classes
+from utils.dataloader import MATKind
+from utils.device_check import detect_device
+from utils.metric2csv import save_lists_to_file, find_max_weighted_sum_index, create_csv, \
+    save_results_to_csv, save_wz_view_to_csv
+from utils.plot import plot_acc, plot_acc_summary, plot_loss, plot_sigma
+from utils.tsne_visual import plot_embeddings, plot_svg_embeddings
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["OMP_NUM_THREADS"] = "1"  # 设置OMP_NUM_THREADS环境变量
+
+from utils.scripts import PLOT_SIGMA, setup_seed, timing_secs, measure, print_model_summary, \
+    print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list, _log_file_only
 
 _CURRENT_PBAR = None  # 当前阶段进度条（主循环设置，训练函数内据此选择 tqdm.write 或 print 输出详情）
 
@@ -61,9 +64,9 @@ def pretrain(Epoch, Dataset_name, current_time):
     tot_loss = 0.  # 初始化总损失
     tot_global_ae = 0.  # 全局 AE（重建+稀疏）分量累计
     tot_view_ae = 0.  # 各视图 AE（重建+稀疏）分量累计
-    loss_list = []  # 用于存储每个视角的损失
     # 遍历数据集，enumerate用于获取批次索引和数据
     for batch_idx, (xs, gnd, _) in enumerate(data_loader):
+        loss_list = []  # 每 batch 清空损失列表，避免跨 batch 累积使 loss/梯度虚高
         # 将数据从字典中提取并按键的顺序转换为张量列表
         xs_dict2tensors = [xs[key] for key in sorted(xs.keys())]
         # 将所有视角的数据拼接在一起，形成一个大的张量，用于计算整体的重建误差
@@ -136,8 +139,8 @@ def pretrain(Epoch, Dataset_name, current_time):
         print(f'Pre  Epoch [{Epoch + 1}] {breakdown}')
         print(f'     | sparsity {_fmt_ratio_list(means)}')
         print(f'     | view weights {_fmt_ratio_list(wz_view.tolist(), 3)}')
-    # 返回当前轮次的平均损失和每个视角的权重
-    return pretrain_loss
+    # 返回本轮总损失与分量（global_ae + view_ae），供分量分解图使用
+    return pretrain_loss, global_ae, view_ae
 
 
 def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time):
@@ -197,13 +200,8 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time)
         loss = sum(loss_list)  # 汇总所有视角的损失
         loss.backward()  # 反向传播计算梯度
         optimizer.step()  # 更新模型参数
-        # 分量累计（loss_list 结构见上方：先 1 个全局 AE，随后每个视图依次追加 2 项）：
-        #   loss_list[0]    = 全局 AE（全局编码器的重建 + 稀疏）
-        #   loss_list[1+2v] = 第 v 个视图的 AE（重建 + 稀疏），即奇数位
-        #   loss_list[2+2v] = 第 v 个视图的对比损失，即偶数位
-        # 所以 sum([1::2]) = 各视图 AE 之和、sum([2::2]) = 各视图对比损失之和，
-        # 正是下方 breakdown 里 view_ae 与 contrastive 两项。
-        tot_loss += loss.item()  # 累加全部项（全局 AE + 各视图 AE + 各视图对比损失）
+        # 分量累计：loss_list[0]=全局 AE，奇数位=各视图 AE，偶数位=各视图对比损失
+        tot_loss += loss.item()  # 累加损失
         tot_global_ae += loss_list[0].item()
         tot_view_ae += sum(loss_list[1::2]).item()
         tot_con += sum(loss_list[2::2]).item()
@@ -248,8 +246,6 @@ if __name__ == '__main__':
             parser.add_argument("--seed", type=int, default=42)
             parser.add_argument("--iter", type=int, default=1)
             parser.add_argument("--weight_decay", type=float, default=0.0)
-            # 末轮权重始终保存；加权最优轮（MAX Epoch）权重副本默认随末轮一并保存，加 --no_save_best 关闭
-            parser.add_argument("--no_save_best", action="store_true", default=False)
             # TODO 选取noise ratio比例的样本，随机(1到view-1)个视图做添加高斯噪声处理
             parser.add_argument('--noise_ratio', type=float, default=0.0)
             # TODO 选取conflict ratio比例的样本，随机选择一个视图的数据用另一个类别的样本的同视图数据替换
@@ -259,7 +255,7 @@ if __name__ == '__main__':
             # TODO 选取sparsity ratio比例维度的随机(1到dims-1)个维度做置0处理
             parser.add_argument('--sparsity_ratio', type=float, default=0.0)
             args = parser.parse_args()
-            # log创建
+            # TODO log创建
             log_path = f'1.logs'
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
@@ -279,9 +275,7 @@ if __name__ == '__main__':
                 view = dataset.num_views
                 # 获取每个视图的维度
                 dims = list(chain.from_iterable(dataset.dims.tolist()))
-                data_file = os.path.join(folder_path, f"{Dataname}.mat")
-                data_size_str = _fmt_file_size(os.path.getsize(data_file)) if os.path.exists(data_file) else "?"
-                print(f"\n[Data] Dataset info ({Dataname}, {data_size_str}, .mat)")
+                print(f"\n[Data] Dataset info")
                 print(f"  {_kv('samples', data_size)}{_kv('views', view)}{_kv('classes', class_num)}")
                 print(f"  {_kv('view dims', str(dims))}")
                 print("-" * 72)
@@ -330,6 +324,8 @@ if __name__ == '__main__':
                 lr_l.append(lr)
                 # 建保存评价指标的列表
                 acc_list, nmi_list, pur_list, ari_list, preloss_list, conloss_list = [], [], [], [], [], []
+                pre_global_ae_list, pre_view_ae_list = [], []  # 预训练损失分量（全局 AE / 各视图 AE）
+                valid_loss_list = []  # 每个验证点对应的当轮总损失（与 acc_list 等长，CSV 保存用）
                 epoch_ticks = []  # 每个评价点对应的真实 epoch（pre 后接 con 续算，出图横坐标用）
                 # TODO 重点来了੭ ᐕ)੭: model
                 with measure(f"{Dataname}: Model construction"):
@@ -354,20 +350,16 @@ if __name__ == '__main__':
                     pre_check_num = 10
                     valid_check_num = 1
 
-                # 加权最优(0.25×4)轮次追踪：训练中随时对刷新最优的验证点做权重快照，
-                # 结束时与最后轮权重一并保存（与下方 find_max_weighted_sum_index 同口径）
-                best_score = -float('inf')            # 目前已见的最大加权和
-                best_idx = None                       # 最优验证点在指标列表中的下标
-                best_state = None                     # 该轮的权重快照
-
                 with measure(f"{Dataname}: Pretraining"):
                     print(f'---------------------------------------{Dataname}[{data_iter}]---------------------------------------')
                     print(f"\n[Train] Pretrain stage ({args.pre_epochs} epochs)")
                     pbar = tqdm(total=args.pre_epochs, desc="Pretrain", unit="epoch", bar_format=BAR_FORMAT)
                     _CURRENT_PBAR = pbar  # 训练函数内据此用 tqdm.write 输出详情
                     for epoch in range(args.pre_epochs):
-                        preloss = pretrain(epoch, Dataname, current_time)  # 1.pre-train
+                        preloss, pre_global_ae, pre_view_ae = pretrain(epoch, Dataname, current_time)  # 1.pre-train
                         preloss_list.append(preloss)
+                        pre_global_ae_list.append(pre_global_ae)  # 分量：全局 AE（重建+稀疏）
+                        pre_view_ae_list.append(pre_view_ae)  # 分量：各视图 AE（重建+稀疏）
                         if (epoch + 1) % pre_check_num == 0:  # TODO pre_check_num 1. pre
                             with measure(f"{Dataname}: Validation (KMeans)"):
                                 acc, nmi, pur, ari, zs_Results = valid(model, device, dataset, view, data_size,
@@ -380,14 +372,12 @@ if __name__ == '__main__':
                             nmi_list.append(nmi)
                             pur_list.append(pur)
                             ari_list.append(ari)
-                            score = 0.25 * (acc + nmi + pur + ari)       # 与 find_max_weighted_sum_index 同口径
-                            if score > best_score:                      # 刷新加权最优 → 快照当前权重
-                                best_score, best_idx = score, len(acc_list) - 1
-                                best_state = {k: t.detach().clone() for k, t in model.state_dict().items()}
+                            valid_loss_list.append(preloss)  # 验证点对应的当轮总损失
                         pbar.update(1)
                     pbar.close()
                     _CURRENT_PBAR = None
-                plot_loss(imgs_path, preloss_list, Dataname, 'pretrain_loss', args.pre_epochs + args.con_epochs)
+                plot_loss(imgs_path, preloss_list, Dataname, 'pretrain_loss', args.pre_epochs + args.con_epochs,
+                          components={'global_ae': pre_global_ae_list, 'view_ae': pre_view_ae_list})
 
                 with measure(f"{Dataname}: Consistency training"):
                     print(f"\n[Train] Consistency stage ({args.con_epochs} epochs)")
@@ -413,17 +403,15 @@ if __name__ == '__main__':
                             nmi_list.append(nmi)
                             pur_list.append(pur)
                             ari_list.append(ari)
-                            score = 0.25 * (acc + nmi + pur + ari)       # 与 find_max_weighted_sum_index 同口径
-                            if score > best_score:                      # 刷新加权最优 → 快照当前权重
-                                best_score, best_idx = score, len(acc_list) - 1
-                                best_state = {k: t.detach().clone() for k, t in model.state_dict().items()}
+                            valid_loss_list.append(conloss)  # 验证点对应的当轮总损失
                         max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
                                                                 acc_weight=0.25, nmi_weight=0.25,
                                                                 pur_weight=0.25, ari_weight=0.25)
                         pbar.update(1)
                     pbar.close()
                     _CURRENT_PBAR = None
-                plot_loss(imgs_path, conloss_list, Dataname, 'con_loss', args.pre_epochs + args.con_epochs)
+                # 一致性阶段总损失 = global_ae + view_ae + contrastive（画总损失曲线，命名为 co-training loss 表明是协同训练总损失，避免与对比损失混淆）
+                plot_loss(imgs_path, conloss_list, Dataname, 'co-training_loss', args.pre_epochs + args.con_epochs)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
                 state = model.state_dict()
@@ -433,14 +421,6 @@ if __name__ == '__main__':
                 model_path = f'{pth_path_meta}/{Dataname}_{current_time}.pth'
                 torch.save(state, model_path)
                 print(f'Model(.pth) has been saved at {model_path}')
-                # 默认与末轮权重一并保存；若最优轮就是末轮，两份相同则不重复保存
-                SAVE_BEST_WEIGHTS = True   # 加权最优轮副本开关：False=只保存末轮（命令行 --no_save_best 亦可关闭）
-                if SAVE_BEST_WEIGHTS and not args.no_save_best and best_state is not None and best_idx is not None:
-                    best_epoch = epoch_ticks[best_idx]
-                    if best_epoch != epoch_ticks[-1]:
-                        best_path = f'{pth_path_meta}/{Dataname}_{current_time}_best{best_epoch}.pth'
-                        torch.save(best_state, best_path)
-                        print(f'Model(best epoch{best_epoch}) has been saved at {best_path}')
                 # TODO 最后一轮
                 info = {"dataset": Dataname,
                         "iter": i + 1,
@@ -489,8 +469,8 @@ if __name__ == '__main__':
                     plot_acc_summary(imgs_path,
                                      {'acc': acc_list, 'nmi': nmi_list, 'pur': pur_list, 'ari': ari_list},
                                      Dataname, epoch_ticks, args.pre_epochs)
-                    save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, loss_list, Dataname, data_ratio,
-                                       valid_check_num, current_time)
+                    save_lists_to_file(acc_list, nmi_list, pur_list, ari_list, valid_loss_list, Dataname, data_ratio,
+                                       epoch_ticks, current_time)
                     # ELMC σ 变化曲线（默认不绘制，PLOT_SIGMA 置 True 开启；'fixed' 模式无历史数据自动跳过）
                     if PLOT_SIGMA:
                         plot_sigma(get_sigma_history(), imgs_path, Dataname)
