@@ -176,7 +176,7 @@ parser.add_argument('--sparsity_ratio', type=float, default=0.0)
 | 目录 | 内容 | 命名 |
 |---|---|---|
 | `1.logs/` | 每个数据集的训练日志（也存放类别分布报告图） | `{dataset}/{dataset}_{timestamp}_{ratio}.log` |
-| `2.results_imgs/` | 训练曲线（loss / ACC / NMI / PUR / ARI）与 ELMC σ 曲线 | `{dataset}_{timestamp}/{dataset}_ep{epochs}_{name}.png` |
+| `2.results_imgs/` | 训练曲线（按分量绘制的损失曲线：`global_ae` / `view_ae` / `contrastive`，以及 ACC / NMI / PUR / ARI）与 ELMC σ 曲线 | `{dataset}_{timestamp}/{dataset}_ep{epochs}_{name}.png` |
 | `3.csv/Metrics/` | 每轮指标：汇总与分视图 + 全局 | `{dataset}_{timestamp}_{ratio}.csv`、`view_{dataset}_{timestamp}_{ratio}.csv` |
 | `3.csv/ViewWeights/` | 每轮 ELMC 视图权重 | `{dataset}_{timestamp}.csv` |
 | `4.models/` | 训练好的模型权重（.pth） | `{dataset}/{dataset}_{timestamp}.pth` |

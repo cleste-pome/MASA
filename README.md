@@ -177,7 +177,7 @@ All output directories are created automatically. All files of one dataset run s
 | Directory | Contents | Naming |
 |---|---|---|
 | `1.logs/` | Training logs per dataset (also holds the class-distribution report figure) | `{dataset}/{dataset}_{timestamp}_{ratio}.log` |
-| `2.results_imgs/` | Training curves (loss / ACC / NMI / PUR / ARI) and the ELMC σ curve | `{dataset}_{timestamp}/{dataset}_ep{epochs}_{name}.png` |
+| `2.results_imgs/` | Training curves (per-component loss curves: `global_ae` / `view_ae` / `contrastive`, and ACC / NMI / PUR / ARI) and the ELMC σ curve | `{dataset}_{timestamp}/{dataset}_ep{epochs}_{name}.png` |
 | `3.csv/Metrics/` | Per-epoch metrics: summary and per-view + global | `{dataset}_{timestamp}_{ratio}.csv`, `view_{dataset}_{timestamp}_{ratio}.csv` |
 | `3.csv/ViewWeights/` | Per-epoch ELMC view weights | `{dataset}_{timestamp}.csv` |
 | `4.models/` | Trained model weights (.pth) | `{dataset}/{dataset}_{timestamp}.pth` |
