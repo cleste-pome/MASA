@@ -75,9 +75,9 @@ def pretrain(Epoch, Dataset_name, current_time):
             with measure(f"{Dataset_name}: t-SNE visualization"):
                 embeddings = TSNE(n_components=2, init='pca', random_state=42).fit_transform(
                     xs2one.detach().cpu())  # TODO tensor
-                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
+                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', Epoch,
                                               Dataset_name)  # TODO plot t-sne svg
-                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
+                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', Epoch,
                                       Dataset_name)  # TODO plot t-sne pdf
                 tqdm.write(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
         # 将每个视角的数据移动到指定设备上（例如，GPU），以便加速计算
@@ -98,9 +98,9 @@ def pretrain(Epoch, Dataset_name, current_time):
             with measure(f"{Dataset_name}: t-SNE visualization"):
                 embeddings = TSNE(n_components=2, init='pca', random_state=42).fit_transform(
                     z_all.detach().cpu())  # TODO 绘制前期融合编码后的全局矩阵
-                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch,
+                fig_svg = plot_svg_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', Epoch,
                                               Dataset_name + f'_EarlyFusion')
-                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', epoch, Dataset_name + f'_EarlyFusion')
+                fig = plot_embeddings(embeddings, gnd, f'5.tsne/{Dataset_name}_{current_time}/', Epoch, Dataset_name + f'_EarlyFusion')
                 tqdm.write(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
 
         # TODO pre 2 局部视角

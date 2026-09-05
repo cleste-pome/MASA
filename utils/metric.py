@@ -102,15 +102,15 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
         for v in range(view):
             # 对每个视图的低级特征 zs[v] 进行 k-means 聚类
             metrics = evaluate(labels, KMeans(n_clusters=class_num, n_init=100).fit_predict(zs[v].cpu().numpy()))
-            zs_results.append([f"View {v + 1}", metrics["acc"], metrics["nmi"], metrics["ari"], metrics["purity"]])
+            zs_results.append([f"View {v + 1}", metrics["acc"], metrics["nmi"], metrics["purity"], metrics["ari"]])
 
         # 对拼接后的 z_all 进行 k-means 聚类
         z_all_metrics = evaluate(labels, KMeans(n_clusters=class_num, n_init=100).fit_predict(z_all.cpu().numpy()))
         zs_results.append(
-            ["Global", z_all_metrics["acc"], z_all_metrics["nmi"], z_all_metrics["ari"], z_all_metrics["purity"]])
+            ["Global", z_all_metrics["acc"], z_all_metrics["nmi"], z_all_metrics["purity"], z_all_metrics["ari"]])
 
         # 打印低级特征聚类结果表格（阶段标题 + 表格标题 + 表格一次写入）
-        print_table(zs_results, headers=[f"Feature", "ACC", "NMI", "ARI", "Purity"],
+        print_table(zs_results, headers=[f"Feature", "ACC", "NMI", "Purity", "ARI"],
                     title="Pre-train: The Sparse Autoencoder with Adaptive Encoding (SAA)\n"
                           "Early-fused Feature Clustering")
         return z_all_metrics["acc"], z_all_metrics["nmi"], z_all_metrics["purity"], z_all_metrics["ari"], zs_results,
@@ -122,15 +122,15 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
         for v in range(view):
             # 对每个视图的一致性特征 rs[v] 进行 k-means 聚类
             metrics = evaluate(labels, KMeans(n_clusters=class_num, n_init=100).fit_predict(rs[v].cpu().numpy()))
-            rs_results.append([f"View {v + 1}", metrics["acc"], metrics["nmi"], metrics["ari"], metrics["purity"]])
+            rs_results.append([f"View {v + 1}", metrics["acc"], metrics["nmi"], metrics["purity"], metrics["ari"]])
 
         # 对全局特征 Y 进行 k-means 聚类
         global_metrics = evaluate(labels, KMeans(n_clusters=class_num, n_init=100).fit_predict(Y.cpu().numpy()))
-        rs_results.append(["Global (Y)", global_metrics["acc"], global_metrics["nmi"], global_metrics["ari"],
-                           global_metrics["purity"]])
+        rs_results.append(["Global (Y)", global_metrics["acc"], global_metrics["nmi"], global_metrics["purity"],
+                           global_metrics["ari"]])
 
         # 打印一致性特征聚类结果表格（阶段标题 + 表格标题 + 表格一次写入）
-        print_table(rs_results, headers=["Feature", "ACC", "NMI", "ARI", "Purity"],
+        print_table(rs_results, headers=["Feature", "ACC", "NMI", "Purity", "ARI"],
                     title="Con-train: SAA+CSR+CDA\nLate-fused Feature Clustering")
         return global_metrics["acc"], global_metrics["nmi"], global_metrics["purity"], global_metrics["ari"], rs_results
     return None
