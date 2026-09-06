@@ -86,6 +86,7 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
     labels = None  # 初始化真实标签
 
     # ===================== 数据加载与前向传播 =====================
+    model.eval()  # 切换评估模式：关闭 Dropout，保证验证指标为确定值（不被随机丢弃扰动）
     for batch_idx, (xs, y, _) in enumerate(test_loader):  # 遍历测试数据批次
         for v in range(view):  # 遍历每个视图的数据
             xs[v] = xs[v].to(device)  # 将每个视图的数据加载到指定设备
@@ -94,6 +95,7 @@ def valid(model, device, dataset, view, data_size, class_num, pre_train=False, c
         # 禁用梯度计算，进行前向传播
         with torch.no_grad():
             xrs, zs, rs, Y, _, z_all, _, _, _ = model(xs)
+    model.train()  # 恢复训练模式（dropout 重新生效，训练循环继续使用）
 
     # ===================== 预训练阶段 =====================
     if pre_train:
