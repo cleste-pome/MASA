@@ -189,30 +189,25 @@ Where `{dataset}` is the dataset name, `{timestamp}` is the run time (one per da
 
 ## 3. 🔬 Loss
 
-The training objective is assembled per stage, and each `ae_loss_function` already contains the reconstruction (MSE) plus the adaptive KL sparsity term (see `loss.py`), so the terms below are the actual components summed into the per-batch loss `loss = sum(loss_list)` used for backpropagation.
-
-**Pretraining stage (AVE):** the loss is the sum of
+The overall objective integrates three terms:
 
 ```py
-# global AE: reconstruction + sparsity for the concatenated (early-fused) input
+# 1. loss_rec: reconstruction (MSE), constraining the autoencoder of each view and the global representation
 ae_loss_function(mean_average, xs2one, xr_all, activation[0], rho=0.05, beta=1.0)
-# view AE: reconstruction + sparsity for each view (adaptive C_spa modulated by its sparsity ratio)
-for v in range(view):
-    ae_loss_function(means[v], xs[v], xrs[v], activation[v + 1], rho=0.05, beta=1.0)
+
+# 2. loss_sparse: KL sparsity, coefficient C_spa adaptively modulated by each view's sparsity ratio (AVE)
+kl_sparse_loss(hidden_layer_activation, rho, sparse_beta)
+
+# 3. loss_con: contrastive loss aligning the global fused representation H with each view's common information (GLDA)
+contrastiveloss(H, rs[v], w2[v])
 ```
 
-**Consistency training stage (ELMC + GLDA):** the loss additionally includes, for each view, the contrastive alignment between the global fused representation `H` and that view's common information (GLDA):
-
-```py
-loss_list.append(
-    ae_loss_function(mean_average, xs2one, xr_all, activation[0], rho=0.05, beta=1.0))       # global AE
-for v in range(view):
-    loss_list.append(ae_loss_function(means[v], xs[v], xrs[v], activation[v + 1], ...))     # view AE
-    loss_list.append(contrastiveloss(H, rs[v], w2[v]))                                       # GLDA contrastive
-loss = sum(loss_list)
-```
-
-The ELMC module computes per-view fusion weights by Laplacian trace alignment during the consistency stage; the score form and bandwidth setting can be switched at the top of `utils/GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the ablation tables. Based on experimental results, when the data scale is larger or the training epochs are more, the kernel bandwidth can be adjusted to a fixed value to balance the training cost.
+Additionally, the **ELMC** module computes per-view fusion weights by Laplacian trace
+alignment. The score form and bandwidth setting can be switched at the top of
+`utils/GlobalLocalManifoldCalibration.py` (`SCORE_FORM` / `SIGMA_MODE`), corresponding to the
+ablation tables. Based on experimental results, when the data scale is larger or the
+training epochs are more, the kernel bandwidth can be adjusted to a fixed value to balance
+the training cost.
 
 The overall objective combines two terms, balanced by a constraint ratio coefficient: the **AVE loss**, summed over all views, of the reconstruction error plus the adaptive entropy-based sparsity penalty (whose strength is modulated by each view's probed sparsity ratio); and the **GLDA loss**, the contrastive alignment between the global fused representation and each view's common information, averaged over views and samples.
 
