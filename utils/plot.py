@@ -388,3 +388,46 @@ def plot_sigma(sigma_history, imgs_path, dataset_name):
     plt.pause(2)
     # 自动关闭窗口
     plt.close()
+
+
+def plot_lr(lr_history, imgs_path, dataset_name):
+    """绘制一致性阶段学习率曲线（每轮实际 lr），保存到 1.logs/{dataset}/。"""
+    if not lr_history:
+        return
+    os.makedirs(imgs_path, exist_ok=True)
+
+    epochs = len(lr_history)
+    plt.figure(figsize=(12, 6))
+
+    # 绘制 lr 曲线
+    plt.plot(range(1, epochs + 1), lr_history, marker='o', color='tab:green', linestyle='-',
+             linewidth=1, markersize=3)
+
+    # 坐标轴与标题（英文标签，避免默认字体缺中文字形）
+    plt.xlabel('Epoch (consistency)', fontsize=14, fontweight='bold', color='darkblue')
+    plt.ylabel('Learning rate', fontsize=14, fontweight='bold', color='darkblue')
+    plt.title(f'{dataset_name} - Consistency LR schedule curve', fontsize=16, fontweight='bold',
+              color='darkred')
+
+    plt.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.6)
+    plt.gca().set_facecolor('#f7f7f7')
+
+    for spine in plt.gca().spines.values():
+        spine.set_color('black')
+        spine.set_linewidth(1.5)
+
+    # 标注首尾 lr
+    plt.text(1, lr_history[0], f'start lr={lr_history[0]:.2e}', fontsize=10, va='bottom')
+    plt.text(epochs, lr_history[-1], f'end lr={lr_history[-1]:.2e}', fontsize=10,
+             ha='right', va='top')
+
+    # x 轴刻度抽样（上限约 10 个）
+    step = max(1, math.ceil(epochs / 10))
+    plt.xticks(range(1, epochs + 1, step))
+
+    plt.tight_layout()
+    filename = f'{imgs_path}/{dataset_name}_lr.png'
+    plt.savefig(filename, dpi=300)
+    plt.show(block=False)
+    plt.pause(2)
+    plt.close()

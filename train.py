@@ -39,7 +39,7 @@ from utils.dataloader import MATKind
 from utils.device_check import detect_device
 from utils.metric2csv import save_lists_to_file, find_max_weighted_sum_index, create_csv, \
     save_results_to_csv, save_wz_view_to_csv
-from utils.plot import plot_acc, plot_acc_summary, plot_loss, plot_sigma
+from utils.plot import plot_acc, plot_acc_summary, plot_loss, plot_sigma, plot_lr
 from utils.tsne_visual import plot_embeddings, plot_svg_embeddings
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -255,7 +255,7 @@ if __name__ == '__main__':
             # TODO 选取sparsity ratio比例维度的随机(1到dims-1)个维度做置0处理
             parser.add_argument('--sparsity_ratio', type=float, default=0.0)
             args = parser.parse_args()
-            # TODO log创建
+            # log创建
             log_path = f'1.logs'
             if not os.path.exists(log_path):
                 os.makedirs(log_path)
@@ -265,7 +265,8 @@ if __name__ == '__main__':
             logger = Logger.get_logger(__file__, Dataname, data_ratio, current_time)
             with measure(f"{Dataname}: Data load & preprocessing"):
                 dataset = MATKind(args.dataset, folder_path)
-                count_classes(Dataname, dataset.Y)  # TODO 统计类别数量分布情况（是否长尾分布）
+                # TODO 统计类别数量分布情况（包括是否长尾分布）
+                count_classes(Dataname, dataset.Y)
 
                 # 获取数据集中类别的数量
                 class_num = dataset.num_classes
@@ -282,7 +283,7 @@ if __name__ == '__main__':
 
                 index = np.arange(data_size)
                 np.random.shuffle(index)
-                # TODO batch size
+                # 特殊数据的 batch size
                 if Dataname == 'NUSWIDEOBJ':
                     args.batch_size = 256
                 else:
@@ -326,8 +327,9 @@ if __name__ == '__main__':
                 acc_list, nmi_list, pur_list, ari_list, preloss_list, conloss_list = [], [], [], [], [], []
                 pre_global_ae_list, pre_view_ae_list = [], []  # 预训练损失分量（全局 AE / 各视图 AE）
                 valid_loss_list = []  # 每个验证点对应的当轮总损失（与 acc_list 等长，CSV 保存用）
+                lr_history_list = []  # 一致性阶段每轮实际学习率（画 lr 曲线用）
                 epoch_ticks = []  # 每个评价点对应的真实 epoch（pre 后接 con 续算，出图横坐标用）
-                # TODO 重点来了੭ ᐕ)੭: model
+                # TODO 重点来了੭ ᐕ)੭: model 神经网络
                 with measure(f"{Dataname}: Model construction"):
                     model = Network(view, dims, args.feature_dim, args.high_feature_dim, device)
                     if i == 0:
@@ -336,12 +338,12 @@ if __name__ == '__main__':
                     state = model.state_dict()
                     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=args.weight_decay)
                     # contrastiveloss = ContrastiveLoss(args.batch_size, device).to(device)
-                    # TODO 初始化损失函数（选择不同的对比损失վ'ᴗ' ի）
+                    # TODO 初始化损失函数（可以选择不同的对比损失վ'ᴗ' ի）
                     contrastiveloss = ContrastiveLoss(batch_size=args.batch_size, device=device, loss_type="classical")
                     metric_csv_path, metric_csv_name = create_csv(Dataname, data_ratio, view, current_time)
                     print(f'Metrics csv file has been created: {metric_csv_path}')
 
-                # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好设置为1
+                # TODO 调整计算评价指标的轮数间隔，valid_check_num有条件的话最好都设置为1
                 if data_size >= 2500:  # large
                     args.con_epochs = 600  # small/large 300/600
                     pre_check_num = 100
@@ -381,16 +383,40 @@ if __name__ == '__main__':
 
                 with measure(f"{Dataname}: Consistency training"):
                     print(f"\n[Train] Consistency stage ({args.con_epochs} epochs)")
+                    # TODO 协同一致性阶段学习率调度：每lr_period轮一个半衰周期，余弦下降至周期起点lr的一半，到达下限lr_floor后保持不变
+                    lr_period = 300  # 学习率半衰期
+                    lr_floor = 1e-5  # 学习率下限：触底后不再下降
+
+                    def _halve_anneal(epoch):
+                        seg, t = divmod(epoch, lr_period)
+                        lr_now = (0.5 ** seg) * (0.75 + 0.25 * np.cos(np.pi * t / lr_period)) * lr
+                        return max(lr_now, lr_floor) / lr
+                    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=_halve_anneal)
+                    # 打印调度配置到日志，便于核对
+                    print(f"LR schedule: halve every {lr_period} epochs, floor {lr_floor} (consistency only)")
+                    # 进度条（仅进度显示）
                     pbar = tqdm(total=args.con_epochs, desc="Consistency", unit="epoch", bar_format=BAR_FORMAT)
-                    _CURRENT_PBAR = pbar  # 训练函数内据此用 tqdm.write 输出详情
+                    # 训练函数内据此用 tqdm.write 输出详情
+                    _CURRENT_PBAR = pbar
+                    # 遍历一致性阶段的每一轮
                     for epoch in range(args.con_epochs):
+                        # 全局轮次号（预训练后接续计算，出图/CSV 用）
                         epoch = args.pre_epochs + epoch
+                        # 特征分离图开关（仅最后预留，当前未启用）
                         plot_SDD = False
+                        # 总轮数（预训练+一致性）
                         total_epochs = args.pre_epochs + args.con_epochs
+                        # 最后一轮才触发特征分离图（当前预留开关）
                         if epoch + 1 == total_epochs:
                             plot_SDD = True
-                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)  # 2.contrastive train
+                        # 2.contrastive train：训练一轮一致性
+                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)
+                        # 保存本轮一致性损失（画 co-training_loss 曲线用）
                         conloss_list.append(conloss)
+                        # 每轮一致性训练后步进一次，学习率平滑衰减
+                        scheduler.step()
+                        # 记录本步进后的实际学习率（画 lr 曲线用）
+                        lr_history_list.append(optimizer.param_groups[0]['lr'])
                         # TODO valid_check_num 2. con
                         if (epoch + 1) % valid_check_num == 0:  # TODO con
                             with measure(f"{Dataname}: Validation (KMeans)"):
@@ -412,6 +438,8 @@ if __name__ == '__main__':
                     _CURRENT_PBAR = None
                 # 一致性阶段总损失 = global_ae + view_ae + contrastive（画总损失曲线，命名为 co-training loss 表明是协同训练总损失，避免与对比损失混淆）
                 plot_loss(imgs_path, conloss_list, Dataname, 'co-training_loss', args.pre_epochs + args.con_epochs)
+                # 一致性阶段学习率曲线（与 .log 同目录 1.logs/{Dataname}/）
+                plot_lr(lr_history_list, f"1.logs/{Dataname}", Dataname)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
                 state = model.state_dict()
@@ -421,7 +449,7 @@ if __name__ == '__main__':
                 model_path = f'{pth_path_meta}/{Dataname}_{current_time}.pth'
                 torch.save(state, model_path)
                 print(f'Model(.pth) has been saved at {model_path}')
-                # TODO 最后一轮
+                # 最后一轮
                 info = {"dataset": Dataname,
                         "iter": i + 1,
                         "Last Epoch": epoch_ticks[-1],
