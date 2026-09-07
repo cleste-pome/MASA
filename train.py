@@ -4,7 +4,7 @@
 =====================================================================
 功能：自动遍历 datasets/ 下全部 .mat，逐个数据集完成两阶段训练 + 评估 + 出图。
 
-【不需要你填写的】直接运行 python train.py 即可；所有超参数（轮数/学习率/
+【输入】直接运行 python train.py 即可；所有超参数（轮数/学习率/
   特征维度等）在 main() 的 argparse 定义处均有默认值，需要调整时改那里
   （或命令行传参，如 python train.py --pre_epochs 300）。
 【输出】1.logs/ 日志、2.results_imgs/ 曲线、3.csv/ 指标与视图权重（Metrics/ + ViewWeights/）、
