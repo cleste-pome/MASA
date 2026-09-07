@@ -383,17 +383,20 @@ if __name__ == '__main__':
 
                 with measure(f"{Dataname}: Consistency training"):
                     print(f"\n[Train] Consistency stage ({args.con_epochs} epochs)")
-                    # TODO 协同一致性阶段学习率调度：每lr_period轮一个半衰周期，余弦下降至周期起点lr的一半，到达下限lr_floor后保持不变
-                    lr_period = 300  # 学习率半衰期
-                    lr_floor = 1e-5  # 学习率下限：触底后不再下降
+                    # 学习率调度开关：True=一致性阶段 lr 随训练变化周期性衰减；False=全程固定初始 lr
+                    LR_SCHEDULE = True
+                    if LR_SCHEDULE:
+                        # TODO 协同一致性阶段学习率调度：每lr_period轮一个半衰周期，余弦下降至周期起点lr的一半，到达下限lr_floor后保持不变
+                        lr_period = 300  # 学习率半衰期
+                        lr_floor = 1e-5  # 学习率下限：触底后不再下降
 
-                    def _halve_anneal(epoch):
-                        seg, t = divmod(epoch, lr_period)
-                        lr_now = (0.5 ** seg) * (0.75 + 0.25 * np.cos(np.pi * t / lr_period)) * lr
-                        return max(lr_now, lr_floor) / lr
-                    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=_halve_anneal)
-                    # 打印调度配置到日志，便于核对
-                    print(f"LR schedule: halve every {lr_period} epochs, floor {lr_floor} (consistency only)")
+                        def _halve_anneal(epoch):
+                            seg, t = divmod(epoch, lr_period)
+                            lr_now = (0.5 ** seg) * (0.75 + 0.25 * np.cos(np.pi * t / lr_period)) * lr
+                            return max(lr_now, lr_floor) / lr
+                        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=_halve_anneal)
+                        # 打印调度配置到日志，便于核对
+                        print(f"LR schedule: halve every {lr_period} epochs, floor {lr_floor} (consistency only)")
                     # 进度条（仅进度显示）
                     pbar = tqdm(total=args.con_epochs, desc="Consistency", unit="epoch", bar_format=BAR_FORMAT)
                     # 训练函数内据此用 tqdm.write 输出详情
@@ -413,10 +416,11 @@ if __name__ == '__main__':
                         conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)
                         # 保存本轮一致性损失（画 co-training_loss 曲线用）
                         conloss_list.append(conloss)
-                        # 每轮一致性训练后步进一次，学习率平滑衰减
-                        scheduler.step()
-                        # 记录本步进后的实际学习率（画 lr 曲线用）
-                        lr_history_list.append(optimizer.param_groups[0]['lr'])
+                        # 每轮一致性训练后步进一次，学习率平滑衰减（关开关时跳过）
+                        if LR_SCHEDULE:
+                            scheduler.step()
+                            # 记录本步进后的实际学习率（画 lr 曲线用）
+                            lr_history_list.append(optimizer.param_groups[0]['lr'])
                         # TODO valid_check_num 2. con
                         if (epoch + 1) % valid_check_num == 0:  # TODO con
                             with measure(f"{Dataname}: Validation (KMeans)"):
@@ -438,8 +442,9 @@ if __name__ == '__main__':
                     _CURRENT_PBAR = None
                 # 一致性阶段总损失 = global_ae + view_ae + contrastive（画总损失曲线，命名为 co-training loss 表明是协同训练总损失，避免与对比损失混淆）
                 plot_loss(imgs_path, conloss_list, Dataname, 'co-training_loss', args.pre_epochs + args.con_epochs)
-                # 一致性阶段学习率曲线（与 .log 同目录 1.logs/{Dataname}/）
-                plot_lr(lr_history_list, f"1.logs/{Dataname}", Dataname)
+                # 一致性阶段学习率曲线（与 .log 同目录 1.logs/{Dataname}/；关开关时 lr 恒定不画）
+                if LR_SCHEDULE:
+                    plot_lr(lr_history_list, f"1.logs/{Dataname}", Dataname)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
                 state = model.state_dict()
