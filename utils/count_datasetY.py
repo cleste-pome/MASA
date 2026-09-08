@@ -48,6 +48,8 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
         "figure.dpi": 120,
         "savefig.dpi": 300,
         "font.family": "sans-serif",
+        "font.sans-serif": ["PingFang SC", "Songti SC", "Heiti SC", "Microsoft YaHei", "SimHei", "sans-serif"],
+        "axes.unicode_minus": False,
         "axes.titlesize": 13,
         "axes.titleweight": "bold",
         "axes.labelsize": 10.5,
@@ -66,7 +68,7 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
 
     # 建图（使用 constrained_layout，无 tight_layout 警告）
     fig = plt.figure(figsize=(14, 8), constrained_layout=True)
-    gs = fig.add_gridspec(2, 2, height_ratios=[3.0, 1.3], wspace=0.18, hspace=0.25)
+    gs = fig.add_gridspec(2, 2, height_ratios=[3.0, 1.3], wspace=0.05, hspace=0.25)
     ax_count = fig.add_subplot(gs[0, 0])
     ax_rank = fig.add_subplot(gs[0, 1])
     ax_text = fig.add_subplot(gs[1, :])
@@ -158,18 +160,35 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
 
     status = f'{status1}, {status2}'
 
-    # 下方：分析文字（全英文）
+    # 下方：分析文字（英文原句 + 对应中文，逐句中英双语并列）
     note = "(Many classes; top-of-bar value labels omitted to avoid overlap)" if K > 12 else ""
     msg = (
-        f"Dataset: {dataset_name}\n"
-        f"Total samples: {total}    Classes: {K}\n"
-        f"Largest class: {max_c} ({max_share*100:.2f}%)    Smallest class: {min_c}\n"
-        f"Imbalance ratio: {imbalance_ratio:.2f}    Status: {status}\n"
-        f"Notes: left panel shows per-class counts and shares; right panel shows the sorted\n"
-        f"       long tail with cumulative coverage. Orange bars are rare classes (< 20% of mean). {note}"
+        f"Dataset: {dataset_name}    数据集：{dataset_name}\n"
+        f"Total samples: {total}    Classes: {K}    总样本数：{total}    类别数：{K}\n"
+        f"Largest class: {max_c} ({max_share*100:.2f}%)    最大类：{max_c}（占比 {max_share*100:.2f}%）"
+        f"    Smallest class: {min_c}    最小类：{min_c}\n"
+        f"Imbalance ratio: {imbalance_ratio:.2f}    不平衡比率：{imbalance_ratio:.2f}"
+        f"    Status: {status}\n"
+        f"Notes: left panel shows per-class counts and shares; right panel shows the sorted long tail\n"
+        f"       with cumulative coverage. Orange bars are rare classes (< 20% of mean). {note}\n"
+        f"说明：左图显示各类别样本数与占比，右图显示排序后的长尾分布与累计覆盖率；"
+        f"橙柱表示稀有类（低于均值的 20%）。"
     )
-    ax_text.text(0.01, 0.5, msg, ha="left", va="center", fontsize=11,
-                 bbox=dict(boxstyle="round,pad=0.6", facecolor="#f9f9f7",
+    # 分行补全：让长 Items 成对换行，避免文本块超宽
+    msg = (
+        f"Dataset: {dataset_name}  数据集：{dataset_name}\n"
+        f"Total samples: {total}   Classes: {K}    总样本数：{total}  类别数：{K}\n"
+        f"Largest class: {max_c} ({max_share*100:.2f}%)  最大类：{max_c}（{max_share*100:.2f}%）"
+        f"    Smallest class: {min_c}  最小类：{min_c}\n"
+        f"Imbalance ratio: {imbalance_ratio:.2f}  不平衡比率：{imbalance_ratio:.2f}"
+        f"    Status: {status}\n"
+        f"Notes: left panel shows per-class counts and shares; right panel shows the sorted long tail\n"
+        f"       with cumulative coverage. Orange bars are rare classes (< 20% of mean). {note}\n"
+        f"说明：左图显示各类别样本数与占比，右图显示排序后的长尾分布与累计覆盖率；\n"
+        f"      橙柱表示稀有类（低于均值的 20%）。"
+    )
+    ax_text.text(0.02, 0.5, msg, ha="left", va="center", fontsize=15,
+                 bbox=dict(boxstyle="round,pad=0.7", facecolor="#f9f9f7",
                            edgecolor=GRID_COLOR, linewidth=1))
 
     fig.suptitle(f"{dataset_name} - Class Statistics & Distribution Analysis", fontsize=16)

@@ -5,10 +5,11 @@ import os
 def get_logger(file_name, data_name, data_rate, current_time):
     """创建/复用按（数据集, 扰动比例）区分的 logger。
 
-    日志文件：1.logs/{data_name}/{data_name}_{current_time}_{data_rate}.log
-    （每个数据集一个子目录，与类别统计图的存放位置一致；文件名带时间戳区分多次实验）。
+    日志文件：1.logs/{data_name}/{data_name}.log
+    （每个数据集一个子目录、一个固定 log 文件，多次实验追加/覆盖写入；
+     时间与扰动比例 时长由日志内容记录——每行带 asctime，比例通过 logger 名区分）。
     """
-    filename = os.path.join("1.logs", data_name, f"{data_name}_{current_time}_{data_rate}.log")
+    filename = os.path.join("1.logs", data_name, f"{data_name}.log")
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     # logger 名含数据集与比例：不同数据集互不干扰；同数据集重复调用时

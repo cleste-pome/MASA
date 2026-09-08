@@ -6,6 +6,13 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
+# 全局统一字体：Times 类衬线体（与出版风格曲线图一致），数学公式同用 STIX
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "STIXGeneral", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+})
+
 """
 # 用例
 plot_loss(imgs_path, preloss_list, Dataname, 'pretrain loss')
@@ -390,24 +397,38 @@ def plot_sigma(sigma_history, imgs_path, dataset_name):
     plt.close()
 
 
-def plot_lr(lr_history, imgs_path, dataset_name):
-    """绘制一致性阶段学习率曲线（每轮实际 lr），保存到 1.logs/{dataset}/。"""
-    if not lr_history:
-        return
+def plot_lr(lr_history, pre_epochs, lr_initial, imgs_path, dataset_name):
+    """绘制全训练学习率曲线（预训练恒定 + 一致性衰减），标注两阶段分界。
+
+    :param lr_history: 一致性阶段每轮实际 lr 列表
+    :param pre_epochs: 预训练轮数（lr 恒定 lr_initial，画水平线）
+    :param lr_initial: 初始学习率（预训练阶段恒定值）
+    :param imgs_path: 保存目录（1.logs/{dataset}/）
+    :param dataset_name: 数据集名
+    """
     os.makedirs(imgs_path, exist_ok=True)
 
-    epochs = len(lr_history)
+    # 预训练段：恒定 lr；一致性段：lr_history（按实际轮数合成全练习曲线）
+    pre_lrs = [lr_initial] * pre_epochs
+    con_lrs = list(lr_history)
+    all_lrs = pre_lrs + con_lrs
+    total_epochs = len(all_lrs)
+    if total_epochs == 0:
+        return
+    epochs_x = list(range(1, total_epochs + 1))
     plt.figure(figsize=(12, 6))
 
-    # 绘制 lr 曲线
-    plt.plot(range(1, epochs + 1), lr_history, marker='o', color='tab:green', linestyle='-',
-             linewidth=1, markersize=3)
+    # 绘制 lr 曲线（预训练=绿段水平线，一致性=同色曲线；色调区分两阶段）
+    plt.plot(epochs_x[:pre_epochs], pre_lrs, color='tab:blue', linestyle='-', linewidth=1.5,
+             marker='o', markersize=2, label='Pretrain (constant lr)')
+    plt.plot(epochs_x[pre_epochs:], con_lrs, color='tab:green', linestyle='-', linewidth=1.5,
+             marker='o', markersize=2, label='Co-training (LR schedule)')
 
     # 坐标轴与标题（英文标签，避免默认字体缺中文字形）
-    plt.xlabel('Epoch (consistency)', fontsize=14, fontweight='bold', color='darkblue')
+    plt.xlabel('Epoch', fontsize=14, fontweight='bold', color='darkblue')
     plt.ylabel('Learning rate', fontsize=14, fontweight='bold', color='darkblue')
-    plt.title(f'{dataset_name} - Consistency LR schedule curve', fontsize=16, fontweight='bold',
-              color='darkred')
+    plt.title(f'{dataset_name} - Learning rate curve (Pretrain | Co-training)',
+              fontsize=16, fontweight='bold', color='darkred')
 
     plt.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.6)
     plt.gca().set_facecolor('#f7f7f7')
@@ -416,14 +437,29 @@ def plot_lr(lr_history, imgs_path, dataset_name):
         spine.set_color('black')
         spine.set_linewidth(1.5)
 
+    # 阶段分界线（与 plot_acc 同风格）：预训练段结束处
+    if 0 < pre_epochs < total_epochs:
+        split = pre_epochs + 0.5
+        plt.axvline(split, color='#AAAAAA', linewidth=0.8, linestyle='--')
+        y_lo, y_hi = plt.gca().get_ylim()
+        kw = dict(fontsize=9, fontstyle='italic', color='#999999', ha='center')
+        plt.text(pre_epochs / 2, y_hi - (y_hi - y_lo) * 0.05, "Pretrain (Independent)",
+                 va='top', **kw)
+        plt.text(pre_epochs + (total_epochs - pre_epochs) / 2, y_lo + (y_hi - y_lo) * 0.05,
+                 "Co-training", va='bottom', **kw)
+
+    # 图例
+    plt.legend(fontsize=10, loc='upper right')
+
     # 标注首尾 lr
-    plt.text(1, lr_history[0], f'start lr={lr_history[0]:.2e}', fontsize=10, va='bottom')
-    plt.text(epochs, lr_history[-1], f'end lr={lr_history[-1]:.2e}', fontsize=10,
-             ha='right', va='top')
+    plt.text(1, lr_initial, f'start lr={lr_initial:.2e}', fontsize=9, va='bottom')
+    if lr_history:
+        plt.text(total_epochs, lr_history[-1], f'end lr={lr_history[-1]:.2e}', fontsize=9,
+                 ha='right', va='top')
 
     # x 轴刻度抽样（上限约 10 个）
-    step = max(1, math.ceil(epochs / 10))
-    plt.xticks(range(1, epochs + 1, step))
+    step = max(1, math.ceil(total_epochs / 10))
+    plt.xticks(range(1, total_epochs + 1, step))
 
     plt.tight_layout()
     filename = f'{imgs_path}/{dataset_name}_lr.png'

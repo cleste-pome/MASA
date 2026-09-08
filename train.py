@@ -236,16 +236,16 @@ if __name__ == '__main__':
         if Dataname.endswith(".mat"):
             Dataname = Dataname[:-4]
             parser = argparse.ArgumentParser(description='train') # 超参数
-            parser.add_argument('--dataset', default=Dataname)
-            parser.add_argument('--batch_size', default=256, type=int)
-            parser.add_argument("--learning_rate", type=float, default=0.0003)
-            parser.add_argument("--pre_epochs", type=int, default=300)  # 300
-            parser.add_argument("--con_epochs", type=int, default=300)  # 300/600
-            parser.add_argument("--feature_dim", type=int, default=64)
-            parser.add_argument("--high_feature_dim", type=int, default=20)
-            parser.add_argument("--seed", type=int, default=42)
-            parser.add_argument("--iter", type=int, default=1)
-            parser.add_argument("--weight_decay", type=float, default=0.0)
+            parser.add_argument('--dataset', default=Dataname)  # Datasets path 数据集名（这对滴是mat格式文件）
+            parser.add_argument('--batch_size', default=256, type=int)  # Batch size 批次大小 （大点好呀）
+            parser.add_argument("--learning_rate", type=float, default=0.0003)  # Learning rate 学习率（协同一致性阶段周期性衰减）
+            parser.add_argument("--pre_epochs", type=int, default=300)  # 300 预训练轮数（各自为战 AVE）
+            parser.add_argument("--con_epochs", type=int, default=300)  # 300/600 协同一致性训练轮数（系统合作 ELMC+GLDA）
+            parser.add_argument("--feature_dim", type=int, default=64)  # 视图编码特征维度 （编码特征空间，表征要学，大点好）
+            parser.add_argument("--high_feature_dim", type=int, default=20)  # 对比压缩特征维度 （全局局部对齐特征空间，涉及对比学习，小点好）
+            parser.add_argument("--seed", type=int, default=42)  # 随机种子（torch/numpy/random）42宇宙的答案
+            parser.add_argument("--iter", type=int, default=2)  # 运行轮数（1到10就差不多了）
+            parser.add_argument("--weight_decay", type=float, default=0.0)  # 权重衰减（Adam L2，0=关闭）
             # TODO 选取noise ratio比例的样本，随机(1到view-1)个视图做添加高斯噪声处理
             parser.add_argument('--noise_ratio', type=float, default=0.0)
             # TODO 选取conflict ratio比例的样本，随机选择一个视图的数据用另一个类别的样本的同视图数据替换
@@ -263,6 +263,8 @@ if __name__ == '__main__':
             # 数据集级时间戳：本数据集所有输出（日志/曲线/指标/权重/可视化）命名统一
             current_time = datetime.now().strftime('%Y%m%d-%H%M%S')
             logger = Logger.get_logger(__file__, Dataname, data_ratio, current_time)
+            # 日志头部：时间戳 + 扰动比例（运行信息均入 log 内容，文件本身不带时戳/比例）
+            logger.info(f'{Dataname} run start | current_time={current_time} | ratio={data_ratio}')
             with measure(f"{Dataname}: Data load & preprocessing"):
                 dataset = MATKind(args.dataset, folder_path)
                 # TODO 统计类别数量分布情况（包括是否长尾分布）
@@ -283,7 +285,7 @@ if __name__ == '__main__':
 
                 index = np.arange(data_size)
                 np.random.shuffle(index)
-                # 特殊数据的 batch size
+                # 特殊数据的 batch size NUSWIDEOBJ数据集跑起来很麻烦，不好驯服
                 if Dataname == 'NUSWIDEOBJ':
                     args.batch_size = 256
                 else:
@@ -328,6 +330,7 @@ if __name__ == '__main__':
                 pre_global_ae_list, pre_view_ae_list = [], []  # 预训练损失分量（全局 AE / 各视图 AE）
                 valid_loss_list = []  # 每个验证点对应的当轮总损失（与 acc_list 等长，CSV 保存用）
                 lr_history_list = []  # 一致性阶段每轮实际学习率（画 lr 曲线用）
+                SAVE_BEST = True  # 最优轮权重保存开关：True=另存 *_best{epoch}.pth；False=只保存最后权重
                 epoch_ticks = []  # 每个评价点对应的真实 epoch（pre 后接 con 续算，出图横坐标用）
                 # TODO 重点来了੭ ᐕ)੭: model 神经网络
                 with measure(f"{Dataname}: Model construction"):
@@ -437,14 +440,24 @@ if __name__ == '__main__':
                         max_index = find_max_weighted_sum_index(acc_list, nmi_list, pur_list, ari_list,
                                                                 acc_weight=0.25, nmi_weight=0.25,
                                                                 pur_weight=0.25, ari_weight=0.25)
+                        # 本次验证点创造新纪录（max_index=刚加入的下标）→ 立即保存最优轮权重快照
+                        # TODO best 权重：一次训练只存一份，文件名固定 {Dataname}_{current_time}_best.pth（新纪录覆盖旧文件）
+                        if SAVE_BEST and max_index == len(acc_list) - 1:
+                            best_state = model.state_dict()
+                            pth_path_best = f'{pth_path}/{Dataname}'
+                            if not os.path.exists(pth_path_best):
+                                os.makedirs(pth_path_best)
+                            best_path = f'{pth_path_best}/{Dataname}_{current_time}_best.pth'
+                            torch.save(best_state, best_path)
+                            print(f'Best-model(.pth) has been saved at {best_path}')
                         pbar.update(1)
                     pbar.close()
                     _CURRENT_PBAR = None
                 # 一致性阶段总损失 = global_ae + view_ae + contrastive（画总损失曲线，命名为 co-training loss 表明是协同训练总损失，避免与对比损失混淆）
                 plot_loss(imgs_path, conloss_list, Dataname, 'co-training_loss', args.pre_epochs + args.con_epochs)
-                # 一致性阶段学习率曲线（与 .log 同目录 1.logs/{Dataname}/；关开关时 lr 恒定不画）
+                # 全训练学习率曲线（预训练恒定 + 一致性衰减，标注两阶段分界；关开关时 lr 恒定不画）
                 if LR_SCHEDULE:
-                    plot_lr(lr_history_list, f"1.logs/{Dataname}", Dataname)
+                    plot_lr(lr_history_list, args.pre_epochs, lr, f"1.logs/{Dataname}", Dataname)
                 loss_list = preloss_list + conloss_list
                 # TODO 1.保存最后次最后一轮的权重文件(.pth)
                 state = model.state_dict()
