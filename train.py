@@ -243,7 +243,7 @@ if __name__ == '__main__':
             parser.add_argument("--con_epochs", type=int, default=300)  # 300/600 协同一致性训练轮数（系统合作 ELMC+GLDA）
             parser.add_argument("--feature_dim", type=int, default=64)  # 视图编码特征维度 （编码特征空间，表征要学，大点好）
             parser.add_argument("--high_feature_dim", type=int, default=20)  # 对比压缩特征维度 （全局局部对齐特征空间，涉及对比学习，小点好）
-            parser.add_argument("--seed", type=int, default=42)  # 随机种子（torch/numpy/random）42宇宙的答案
+            parser.add_argument("--seed", type=int, default=42)  # 随机种子（torch/numpy/random）42 宇宙的答案
             parser.add_argument("--iter", type=int, default=1)  # 运行轮数（这是跑多少个循环，和epochs不一样）
             parser.add_argument("--weight_decay", type=float, default=0.0)  # 权重衰减（Adam L2，0=关闭）
             # TODO 选取noise ratio比例的样本，随机(1到view-1)个视图做添加高斯噪声处理
