@@ -136,15 +136,11 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
                          fontsize=9, ha="left", va="bottom" if idx % 2 == 0 else "top",
                          color=INK_SECONDARY)
 
+    # 前 K//2 个类别的累计占比（均匀数据恰为 0.5；K=1 无长尾概念，记 0）
     half_k = K // 2
-    if K % 2 == 0:
-        # K 是偶数：取前 K/2 和 K/2 + 1 个类别中间两点的平均（线性插值）
-        imbalance_half = (cum[half_k - 1] / 100.0 + cum[half_k] / 100.0) / 2.0
-    else:
-        # K 是奇数：正好取前 K/2 个类别
-        imbalance_half = cum[half_k] / 100.0
+    imbalance_half = cum[half_k - 1] / 100.0 if half_k >= 1 else 0.0
 
-    if max_share > 50:
+    if max_share > 0.5:
         status1 = f"severely imbalanced (largest-class share = {max_share:.2f} > 0.5)"
     else:
         status1 = f"roughly balanced (largest-class share = {max_share:.2f} < 0.5)"
@@ -174,7 +170,10 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
         f"说明：左图显示各类别样本数与占比，右图显示排序后的长尾分布与累计覆盖率；"
         f"橙柱表示稀有类（低于均值的 20%）。"
     )
-    # 分行补全：让长 Items 成对换行，避免文本块超宽
+    # 稀有类说明只在图上确有橙柱时出现（无稀有类时该句不成立）
+    rare_en = " Orange bars are rare classes (< 20% of mean)." if is_rare.any() else ""
+    rare_cn = "；橙柱表示稀有类（低于均值的 20%）。" if is_rare.any() else "。"
+    note_suffix = f"{rare_en} {note}".rstrip()
     msg = (
         f"Dataset: {dataset_name}  数据集：{dataset_name}\n"
         f"Total samples: {total}   Classes: {K}    总样本数：{total}  类别数：{K}\n"
@@ -183,9 +182,8 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
         f"Imbalance ratio: {imbalance_ratio:.2f}  不平衡比率：{imbalance_ratio:.2f}"
         f"    Status: {status}\n"
         f"Notes: left panel shows per-class counts and shares; right panel shows the sorted long tail\n"
-        f"       with cumulative coverage. Orange bars are rare classes (< 20% of mean). {note}\n"
-        f"说明：左图显示各类别样本数与占比，右图显示排序后的长尾分布与累计覆盖率；\n"
-        f"      橙柱表示稀有类（低于均值的 20%）。"
+        f"       with cumulative coverage.{note_suffix}\n"
+        f"说明：左图显示各类别样本数与占比，右图显示排序后的长尾分布与累计覆盖率{rare_cn}"
     )
     ax_text.text(0.02, 0.5, msg, ha="left", va="center", fontsize=15,
                  bbox=dict(boxstyle="round,pad=0.7", facecolor="#f9f9f7",
