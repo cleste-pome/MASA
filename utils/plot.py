@@ -13,6 +13,9 @@ plt.rcParams.update({
     "mathtext.fontset": "stix",
 })
 
+# 图片显示开关默认值（训练时由 train.py 的同名开关同步覆盖）
+SHOW_IMAGE = False
+
 """
 # 用例
 plot_loss(imgs_path, preloss_list, Dataname, 'pretrain loss')
@@ -74,10 +77,11 @@ def plot_loss(imgs_path, loss_list, dataset_name, name, total_epochs=None, compo
     # 调整图表布局并保存
     plt.tight_layout()
     plt.savefig(f'{imgs_path}/{dataset_name}_ep{total}_{name}.png', dpi=300)
-    # 显示图表，设置为非阻塞
-    plt.show(block=False)
-    # 窗口显示n秒后自动继续执行
-    plt.pause(2)
+    if SHOW_IMAGE:
+        # 显示图表，设置为非阻塞
+        plt.show(block=False)
+        # 窗口显示n秒后自动继续执行
+        plt.pause(2)
     # 自动关闭窗口
     plt.close()
 
@@ -207,10 +211,11 @@ def plot_acc(imgs_path, acc_list, dataset_name, name, x_values=None, pre_epochs=
         os.makedirs(os.path.dirname(filename))
 
     plt.savefig(filename, dpi=300)
-    # 显示图表，设置为非阻塞
-    plt.show(block=False)
-    # 窗口显示n秒后自动继续执行
-    plt.pause(2)
+    if SHOW_IMAGE:
+        # 显示图表，设置为非阻塞
+        plt.show(block=False)
+        # 窗口显示n秒后自动继续执行
+        plt.pause(2)
     # 自动关闭窗口
     plt.close()
 
@@ -341,8 +346,9 @@ def plot_acc_summary(imgs_path, metrics_dict, dataset_name, x_values=None, pre_e
     filename = f'{imgs_path}/{dataset_name}_summary.png'
     fig.savefig(filename, dpi=300)
     # 显示图表，设置为非阻塞
-    plt.show(block=False)
-    plt.pause(2)
+    if SHOW_IMAGE:
+        plt.show(block=False)
+        plt.pause(2)
     plt.close()
 
 
@@ -389,10 +395,11 @@ def plot_sigma(sigma_history, imgs_path, dataset_name):
     plt.tight_layout()
     filename = f'{imgs_path}/{dataset_name}_sigma.png'
     plt.savefig(filename, dpi=300)
-    # 显示图表，设置为非阻塞
-    plt.show(block=False)
-    # 窗口显示n秒后自动继续执行
-    plt.pause(2)
+    if SHOW_IMAGE:
+        # 显示图表，设置为非阻塞
+        plt.show(block=False)
+        # 窗口显示n秒后自动继续执行
+        plt.pause(2)
     # 自动关闭窗口
     plt.close()
 
@@ -464,6 +471,7 @@ def plot_lr(lr_history, pre_epochs, lr_initial, imgs_path, dataset_name):
     plt.tight_layout()
     filename = f'{imgs_path}/{dataset_name}_lr.png'
     plt.savefig(filename, dpi=300)
-    plt.show(block=False)
-    plt.pause(2)
+    if SHOW_IMAGE:
+        plt.show(block=False)
+        plt.pause(2)
     plt.close()

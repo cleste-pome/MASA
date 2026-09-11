@@ -7,6 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
+from utils import plot
+
 # 配色（经 dataviz 校验器验证：categorical slot 1/2 + status serious）
 COLOR_BLUE = "#2a78d6"    # 主色（categorical slot 1）
 COLOR_ORANGE = "#eb6834"  # 辅助色（categorical slot 2）
@@ -192,9 +194,9 @@ def count_classes(dataset_name, Y_RealLabel, show=False, pause_sec=2):
     fig.suptitle(f"{dataset_name} - Class Statistics & Distribution Analysis", fontsize=16)
 
     fig.savefig(out_path, dpi=300)
-    if show:
+    if plot.SHOW_IMAGE and show:
         plt.show()
-    else:
+    elif plot.SHOW_IMAGE:
         plt.show(block=False)
         plt.pause(pause_sec)
-        plt.close()
+    plt.close()

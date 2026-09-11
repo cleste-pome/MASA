@@ -39,14 +39,15 @@ from utils.dataloader import MATKind
 from utils.device_check import detect_device
 from utils.metric2csv import save_lists_to_file, find_max_weighted_sum_index, create_csv, \
     save_results_to_csv, save_wz_view_to_csv
+from utils import plot
 from utils.plot import plot_acc, plot_acc_summary, plot_loss, plot_sigma, plot_lr
 from utils.tsne_visual import plot_embeddings, plot_svg_embeddings
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ["OMP_NUM_THREADS"] = "1"  # 设置OMP_NUM_THREADS环境变量
-
 from utils.scripts import PLOT_SIGMA, setup_seed, timing_secs, measure, print_model_summary, \
     print_timing_report, BAR_FORMAT, _kv, _fmt_ratio_list, _log_file_only
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["OMP_NUM_THREADS"] = "1"  # 设置OMP_NUM_THREADS环境变量
 
 _CURRENT_PBAR = None  # 当前阶段进度条（主循环设置，训练函数内据此选择 tqdm.write 或 print 输出详情）
 
@@ -143,13 +144,12 @@ def pretrain(Epoch, Dataset_name, current_time):
     return pretrain_loss, global_ae, view_ae
 
 
-def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time):
+def contrastive_train(Epoch, Dataset_name, Total_epochs, current_time):
     """一致性训练一个 epoch：前向 → 重建+稀疏+对比损失 → 反向更新，返回本轮平均损失。
 
     :param Epoch: 当前轮次（全局轮数，在 pre 阶段之后续算）
     :param Dataset_name: 数据集名（视图权重 CSV 路径与分段计时分组用）
-    :param Total_epochs: pre+con 总轮数（进度显示与最后一轮判断用）
-    :param Plot_SDD: 最后一轮触发特征分离图（当前为预留开关，未启用）
+    :param Total_epochs: pre+con 总轮数（进度显示用）
     :param current_time: 数据集级时间戳（输出文件命名）
     :return: 本轮平均损失（全局 AE + 各视图 AE + 各视图对比损失）
     每轮详情经当前阶段进度条（_CURRENT_PBAR）用 tqdm.write 输出；无进度条时用 print。
@@ -178,10 +178,6 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time)
         #     print(f'1.SVG_path:{fig_svg} 2.PDF_path:{fig}')
 
         loss_list = []
-        # if Plot_SDD:
-        #     xs_list = list(xs.values())
-        #     names = ['xs', 'xrs', 'zs', 'rs', 'H', 'xr_all', 'z_all']
-        #     feature_separation([xs_list, xrs, zs, rs, H, xr_all, z_all], names, Dataset_name)
         # TODO C.0.0 w2: 每个视角权重取平均
         w2 = []
         for v in range(view):
@@ -222,6 +218,9 @@ def contrastive_train(Epoch, Dataset_name, Total_epochs, Plot_SDD, current_time)
 
 
 if __name__ == '__main__':
+    # 图片显示开关：True=绘图后弹窗显示，False=只保存到磁盘不弹窗
+    SHOW_IMAGE = True
+    plot.SHOW_IMAGE = SHOW_IMAGE  # 同步给绘图模块（画图/显示逻辑在 utils/plot.py）
     # loop in data
     folder_path = f"datasets"  # TODO 数据集文件夹地址
     # 只遍历 .mat 数据集文件（过滤 .DS_Store 等无关文件，保证 data_iter 序号连续）
@@ -408,15 +407,10 @@ if __name__ == '__main__':
                     for epoch in range(args.con_epochs):
                         # 全局轮次号（预训练后接续计算，出图/CSV 用）
                         epoch = args.pre_epochs + epoch
-                        # 特征分离图开关（仅最后预留，当前未启用）
-                        plot_SDD = False
                         # 总轮数（预训练+一致性）
                         total_epochs = args.pre_epochs + args.con_epochs
-                        # 最后一轮才触发特征分离图（当前预留开关）
-                        if epoch + 1 == total_epochs:
-                            plot_SDD = True
                         # 2.contrastive train：训练一轮一致性
-                        conloss = contrastive_train(epoch, Dataname, total_epochs, plot_SDD, current_time)
+                        conloss = contrastive_train(epoch, Dataname, total_epochs, current_time)
                         # 保存本轮一致性损失（画 co-training_loss 曲线用）
                         conloss_list.append(conloss)
                         # 每轮一致性训练后步进一次，学习率平滑衰减（关开关时跳过）
