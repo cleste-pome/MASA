@@ -14,7 +14,7 @@
 
 ***
 
-Welcome to the official implementation of **MASA**🧩, a multi-view clustering (MVC) framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), and aligns the global fused representation with each view's common information via contrastive learning (GLDA). ELMC measures how closely each view's local manifold agrees with the early-fused global manifold. The pipeline is agnostic to the number of views: two or more, fusion proceeds directly.
+Welcome to the official implementation of **MASA**, a multi-view clustering (MVC) framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), and aligns the global fused representation with each view's common information via contrastive learning (GLDA). ELMC measures how closely each view's local manifold agrees with the early-fused global manifold. The pipeline is agnostic to the number of views: two or more, fusion proceeds directly.
 
 <details open><summary>📣 I also have other multi-view clustering projects that may interest you ✨.</summary><p>
 
