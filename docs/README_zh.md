@@ -4,7 +4,7 @@
 
 <div align="center">
 
-<h2>Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration</h2>
+<h2>[TPAMI 2026] 💫 Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration</h2>
 
 [Ruimeng Liu](https://github.com/cleste-pome)<sup>1</sup>, [Chang Tang](https://github.com/changtang)<sup>1</sup>, [Bo Wang]()<sup>1</sup>, [Zhenglai Li](https://github.com/guanyuezhen)<sup>2</sup>, [Lianbo Guo]()<sup>1</sup>, [Xinwang Liu](https://github.com/xinwangliu)<sup>3</sup>
 
