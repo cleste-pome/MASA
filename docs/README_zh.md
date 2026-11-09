@@ -68,6 +68,7 @@ MASA 框架流程图。自适应视图专属编码（AVE）先探测每个视图
 @article{liu2026masa,
   author={Ruimeng, Liu and Chang, Tang and Bo, Wang and Zhenglai, Li and Lianbo, Guo and Xinwang, Liu},
   title={Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
   year={2026}
 }
 ```
