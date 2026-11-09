@@ -4,7 +4,7 @@
 
 <div align="center">
 
-<h2>[TPAMI 2026] Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration</h2>
+<h2>[TPAMI 2026]💫 Towards Robust Multi-View Clustering via Early-to-late Manifold Consistency Calibration</h2>
 
 [Ruimeng Liu](https://github.com/cleste-pome)<sup>1</sup>, [Chang Tang](https://github.com/changtang)<sup>1</sup>, [Bo Wang]()<sup>1</sup>, [Zhenglai Li](https://github.com/guanyuezhen)<sup>2</sup>, [Lianbo Guo]()<sup>1</sup>, [Xinwang Liu](https://github.com/xinwangliu)<sup>3</sup>
 
@@ -14,7 +14,7 @@
 
 ***
 
-Welcome to the official implementation of **MASA**, a multi-view clustering (MVC) framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), and aligns the global fused representation with each view's common information via contrastive learning (GLDA). ELMC measures how closely each view's local manifold agrees with the early-fused global manifold. The pipeline is agnostic to the number of views: two or more, fusion proceeds directly.
+Welcome to the official implementation of **MASA**🧩, a multi-view clustering (MVC) framework that handles cross-view sparsity heterogeneity via adaptive view-specific encoding (AVE), calibrates the late-stage fusion weights through early-to-late manifold consistency (ELMC), and aligns the global fused representation with each view's common information via contrastive learning (GLDA). ELMC measures how closely each view's local manifold agrees with the early-fused global manifold. The pipeline is agnostic to the number of views: two or more, fusion proceeds directly.
 
 <details open><summary>📣 I also have other multi-view clustering projects that may interest you ✨.</summary><p>
 
